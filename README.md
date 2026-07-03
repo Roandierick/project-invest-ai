@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Invest AI
 
-## Getting Started
+Webapp voor Belgische vastgoedinvesteerders die per pand een analyse willen opbouwen via een chat-ervaring, met deterministische rekencore en later vision + tool-calling.
 
-First, run the development server:
+## Wat er nu staat
+
+- Next.js App Router + TypeScript + Tailwind
+- lokale chat-centrische MVP zonder login
+- module 1 van de calc-engine:
+  - registratiebelasting
+  - aankoopakte/notariskosten
+- unit tests voor de eerste fiscale en notariële berekeningen
+- Supabase SQL-migratie met RLS-basis voor gesprekken, snapshots, berichten en uploads
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run test
+npm run typecheck
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Lokaal starten
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Installeer dependencies
+2. Maak `.env.local` aan op basis van [`.env.example`](./.env.example)
+3. Start de app:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev
+```
 
-## Learn More
+## Database
 
-To learn more about Next.js, take a look at the following resources:
+De initiële Supabase-setup staat hier:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [docs/supabase-setup.md](./docs/supabase-setup.md)
+- [supabase/migrations/202606210001_initial_schema.sql](./supabase/migrations/202606210001_initial_schema.sql)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Calc-engine
 
-## Deploy on Vercel
+De eerste module leeft in:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [src/lib/calc-engine/module-1.ts](./src/lib/calc-engine/module-1.ts)
+- [src/lib/calc-engine/module-1.test.ts](./src/lib/calc-engine/module-1.test.ts)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Belangrijk:
+
+- de LLM rekent niets zelf uit
+- ontbrekende gegevens leveren een gedeeltelijk resultaat op, geen gokwerk
+- voor verouderde Vlaamse gunstregimes (`IER`, `beschermd monument`) wordt expliciet op datum gestuurd
+
+## Volgende logische stappen
+
+1. Claude vision-extractie voor foto’s en screenshots koppelen aan hetzelfde input-schema
+2. server-side snapshots bewaren in Supabase
+3. tool-calling chatroute toevoegen voor herberekeningen binnen hetzelfde gesprek
+4. modules 2 t.e.m. 6 toevoegen

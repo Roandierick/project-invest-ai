@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-primary: #1b3a5c;
+  --color-primary-strong: #14304b;
+  --color-background: #f7f5f2;
+  --color-surface: #ffffff;
+  --color-surface-alt: #fbfaf8;
+  --color-border: #e8e5e1;
+  --color-foreground: #1a1a1a;
+  --color-muted: #6b6b6b;
+  --color-success: #2d6a4f;
+  --color-warning: #b45309;
+  --color-danger: #991b1b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-plus-jakarta);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-background);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-inter), sans-serif;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(27, 58, 92, 0.14);
+  color: var(--color-foreground);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8e8a84;
+}
+
+.app-shell-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 12px 30px rgba(27, 58, 92, 0.07);
+}
+
+.subtle-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #c8c4bf transparent;
+}
+
+.subtle-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: #c8c4bf;
+}
+
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: #ece8e3;
+}
+
+.skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.7) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

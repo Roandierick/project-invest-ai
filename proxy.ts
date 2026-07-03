@@ -1,0 +1,44 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { updateSupabaseSession } from "@/lib/supabase/proxy";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+
+function normalizeNextPath(pathname: string, search: string): string {
+  const candidate = `${pathname}${search}`;
+
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
+    return "/";
+  }
+
+  return candidate;
+}
+
+export async function proxy(request: NextRequest) {
+  const { response, userId } = await updateSupabaseSession(request);
+
+  if (!isSupabaseConfigured() || userId || request.nextUrl.pathname === "/login") {
+    return response;
+  }
+
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.searchParams.set(
+    "next",
+    normalizeNextPath(request.nextUrl.pathname, request.nextUrl.search),
+  );
+
+  const redirectResponse = NextResponse.redirect(loginUrl);
+
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+
+  return redirectResponse;
+}
+
+export const config = {
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js)$).*)",
+  ],
+};
