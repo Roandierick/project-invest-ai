@@ -15,26 +15,37 @@ function normalizeNextPath(pathname: string, search: string): string {
 }
 
 export async function proxy(request: NextRequest) {
-  const { response, userId } = await updateSupabaseSession(request);
+  try {
+    const { response, userId, failed } = await updateSupabaseSession(request);
 
-  if (!isSupabaseConfigured() || userId || request.nextUrl.pathname === "/login") {
-    return response;
+    if (
+      !isSupabaseConfigured() ||
+      failed ||
+      userId ||
+      request.nextUrl.pathname === "/login"
+    ) {
+      return response;
+    }
+
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set(
+      "next",
+      normalizeNextPath(request.nextUrl.pathname, request.nextUrl.search),
+    );
+
+    const redirectResponse = NextResponse.redirect(loginUrl);
+
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+
+    return redirectResponse;
+  } catch {
+    return NextResponse.next({
+      request,
+    });
   }
-
-  const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/login";
-  loginUrl.searchParams.set(
-    "next",
-    normalizeNextPath(request.nextUrl.pathname, request.nextUrl.search),
-  );
-
-  const redirectResponse = NextResponse.redirect(loginUrl);
-
-  response.cookies.getAll().forEach((cookie) => {
-    redirectResponse.cookies.set(cookie);
-  });
-
-  return redirectResponse;
 }
 
 export const config = {

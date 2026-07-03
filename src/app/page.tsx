@@ -1,7 +1,12 @@
-import { connection } from "next/server";
-
 import { PersistentAnalysisWorkspace } from "@/components/persistent-analysis-workspace";
-import { loadWorkspacePageBootstrap } from "@/lib/workspace/page-bootstrap";
+import type { WorkspaceBootstrap } from "@/lib/conversations/repository";
+import { shouldShowSupabaseSetupNotice } from "@/lib/supabase/env";
+
+const EMPTY_BOOTSTRAP: WorkspaceBootstrap = {
+  conversations: [],
+  activeConversationId: null,
+  activeConversation: null,
+};
 
 interface HomeProps {
   searchParams?: Promise<{
@@ -11,16 +16,14 @@ interface HomeProps {
 
 export default async function Home({ searchParams }: HomeProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  await connection();
-  const bootstrap = await loadWorkspacePageBootstrap(
-    resolvedSearchParams.conversation ?? null,
-  );
+  const shouldShowSetupNotice = shouldShowSupabaseSetupNotice();
 
   return (
     <PersistentAnalysisWorkspace
-      isSupabaseConfigured={bootstrap.isSupabaseConfigured}
-      currentUser={bootstrap.currentUser}
-      initialBootstrap={bootstrap.initialBootstrap}
+      isSupabaseConfigured={!shouldShowSetupNotice}
+      currentUser={null}
+      initialBootstrap={EMPTY_BOOTSTRAP}
+      preferredConversationId={resolvedSearchParams.conversation ?? null}
     />
   );
 }

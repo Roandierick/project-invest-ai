@@ -30,16 +30,24 @@ export async function loadWorkspacePageBootstrap(
     };
   }
 
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  return {
-    isSupabaseConfigured: true,
-    currentUser: user ? { id: user.id, email: user.email ?? null } : null,
-    initialBootstrap: user
-      ? await loadWorkspaceBootstrap(supabase, preferredConversationId)
-      : EMPTY_BOOTSTRAP,
-  };
+    return {
+      isSupabaseConfigured: true,
+      currentUser: user ? { id: user.id, email: user.email ?? null } : null,
+      initialBootstrap: user
+        ? await loadWorkspaceBootstrap(supabase, preferredConversationId)
+        : EMPTY_BOOTSTRAP,
+    };
+  } catch {
+    return {
+      isSupabaseConfigured: true,
+      currentUser: null,
+      initialBootstrap: EMPTY_BOOTSTRAP,
+    };
+  }
 }

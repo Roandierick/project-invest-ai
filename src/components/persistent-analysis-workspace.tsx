@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AnalysisResultsCard } from "@/components/analysis-results-card";
@@ -34,7 +34,14 @@ interface PersistentAnalysisWorkspaceProps {
   isSupabaseConfigured: boolean;
   currentUser: WorkspaceUser | null;
   initialBootstrap: WorkspaceBootstrap;
+  preferredConversationId?: string | null;
 }
+
+const EMPTY_WORKSPACE_BOOTSTRAP: WorkspaceBootstrap = {
+  conversations: [],
+  activeConversationId: null,
+  activeConversation: null,
+};
 
 type ExtractionApiResponse = {
   merged: MergedListingExtraction;
@@ -527,6 +534,7 @@ export function PersistentAnalysisWorkspace({
   isSupabaseConfigured,
   currentUser,
   initialBootstrap,
+  preferredConversationId = null,
 }: PersistentAnalysisWorkspaceProps) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>(
@@ -562,15 +570,18 @@ export function PersistentAnalysisWorkspace({
     userMessage: string;
     assistantMessage: string;
   } | null>(null);
+  const [resolvedCurrentUser, setResolvedCurrentUser] = useState(currentUser);
+  const [clientBootstrapReady, setClientBootstrapReady] = useState(
+    !isSupabaseConfigured || currentUser !== null,
+  );
+  const [supabase, setSupabase] = useState<
+    ReturnType<typeof getSupabaseBrowserClient> | null
+  >(null);
 
   const latestResult = activeConversation?.latestResult ?? null;
   const currentEnrichmentContext =
     activeConversation?.currentEnrichmentContext ?? null;
   const latestSnapshotVersion = activeConversation?.latestSnapshot?.version ?? 0;
-  const supabase = useMemo(
-    () => (isSupabaseConfigured ? getSupabaseBrowserClient() : null),
-    [isSupabaseConfigured],
-  );
 
   const displayedMessages: DisplayMessage[] = useMemo(() => {
     const persisted = (activeConversation?.messages ?? []).map((message) => ({
@@ -614,6 +625,96 @@ export function PersistentAnalysisWorkspace({
     [selectedFilePreviews],
   );
 
+  const applyWorkspaceBootstrap = useCallback((next: WorkspaceBootstrap) => {
+    setConversations(next.conversations);
+    setActiveConversationId(next.activeConversationId ?? "");
+    setActiveConversation(next.activeConversation);
+    setForm(next.activeConversation?.currentForm ?? emptyForm());
+  }, []);
+
+  const resetWorkspaceToEmpty = useCallback(() => {
+    applyWorkspaceBootstrap(EMPTY_WORKSPACE_BOOTSTRAP);
+  }, [applyWorkspaceBootstrap]);
+
+  const syncWorkspace = useCallback(async (
+    client: ReturnType<typeof getSupabaseBrowserClient>,
+    preferredConversationIdOverride?: string | null,
+  ) => {
+    setWorkspaceBusy(true);
+
+    try {
+      const {
+        data: { user },
+      } = await client.auth.getUser();
+
+      const nextUser = user ? { id: user.id, email: user.email ?? null } : null;
+      setResolvedCurrentUser(nextUser);
+
+      if (!nextUser) {
+        resetWorkspaceToEmpty();
+        return;
+      }
+
+      const nextBootstrap = await loadWorkspaceBootstrap(
+        client,
+        preferredConversationIdOverride ?? null,
+      );
+      applyWorkspaceBootstrap(nextBootstrap);
+    } catch (workspaceError) {
+      setResolvedCurrentUser(null);
+      resetWorkspaceToEmpty();
+      setError(
+        workspaceError instanceof Error
+          ? workspaceError.message
+          : "Workspace laden is mislukt.",
+      );
+    } finally {
+      setWorkspaceBusy(false);
+      setClientBootstrapReady(true);
+    }
+  }, [applyWorkspaceBootstrap, resetWorkspaceToEmpty]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function initializeWorkspace() {
+      try {
+        const client = getSupabaseBrowserClient();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setSupabase(client);
+        await syncWorkspace(client, preferredConversationId);
+      } catch (workspaceError) {
+        if (isCancelled) {
+          return;
+        }
+
+        setSupabase(null);
+        setResolvedCurrentUser(null);
+        resetWorkspaceToEmpty();
+        setError(
+          workspaceError instanceof Error
+            ? workspaceError.message
+            : "Workspace initialiseren is mislukt.",
+        );
+        setClientBootstrapReady(true);
+      }
+    }
+
+    void initializeWorkspace();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isSupabaseConfigured, preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
+
   useEffect(() => {
     if (!supabase) {
       return;
@@ -622,11 +723,11 @@ export function PersistentAnalysisWorkspace({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      router.refresh();
+      void syncWorkspace(supabase, preferredConversationId);
     });
 
     return () => subscription.unsubscribe();
-  }, [router, supabase]);
+  }, [preferredConversationId, supabase, syncWorkspace]);
 
   async function refreshWorkspace(preferredConversationId?: string | null) {
     if (!supabase) {
@@ -638,14 +739,11 @@ export function PersistentAnalysisWorkspace({
       preferredConversationId ?? activeConversationId ?? null,
     );
 
-    setConversations(next.conversations);
-    setActiveConversationId(next.activeConversationId ?? "");
-    setActiveConversation(next.activeConversation);
-    setForm(next.activeConversation?.currentForm ?? emptyForm());
+    applyWorkspaceBootstrap(next);
   }
 
   async function ensureConversation(): Promise<string> {
-    if (!supabase || !currentUser) {
+    if (!supabase || !resolvedCurrentUser) {
       throw new Error("Geen actieve gebruiker beschikbaar.");
     }
 
@@ -653,7 +751,10 @@ export function PersistentAnalysisWorkspace({
       return activeConversationId;
     }
 
-    const createdConversation = await createConversation(supabase, currentUser.id);
+    const createdConversation = await createConversation(
+      supabase,
+      resolvedCurrentUser.id,
+    );
     await refreshWorkspace(createdConversation.id);
 
     return createdConversation.id;
@@ -684,13 +785,21 @@ export function PersistentAnalysisWorkspace({
       return;
     }
 
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (logoutError) {
+      setError(
+        logoutError instanceof Error
+          ? logoutError.message
+          : "Uitloggen is mislukt.",
+      );
+    }
   }
 
   async function handleNewConversation() {
-    if (!supabase || !currentUser) {
+    if (!supabase || !resolvedCurrentUser) {
       return;
     }
 
@@ -698,7 +807,10 @@ export function PersistentAnalysisWorkspace({
     setError(null);
 
     try {
-      const createdConversation = await createConversation(supabase, currentUser.id);
+      const createdConversation = await createConversation(
+        supabase,
+        resolvedCurrentUser.id,
+      );
       setComposer("");
       setStreamingTurn(null);
       setReviewPatch(null);
@@ -916,14 +1028,36 @@ export function PersistentAnalysisWorkspace({
     return <SupabaseSetupNotice />;
   }
 
-  if (!currentUser) {
-    return null;
+  if (!clientBootstrapReady) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-4xl items-center justify-center px-4 py-8 md:px-6">
+        <section className="app-shell-card rounded-[1.75rem] p-8 text-[var(--color-foreground)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--color-muted)]">
+            Workspace
+          </p>
+          <h1 className="mt-4 font-[family:var(--font-display)] text-4xl leading-tight text-[var(--color-foreground)]">
+            Analyseworkspace wordt geladen
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
+            We bouwen je chatruimte op zonder de pagina server-side te blokkeren.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!resolvedCurrentUser) {
+    const nextPath = preferredConversationId
+      ? `/?conversation=${encodeURIComponent(preferredConversationId)}`
+      : "/";
+
+    return <AuthPanel nextPath={nextPath} />;
   }
 
   return (
     <WorkspaceFrame
-      currentUserEmail={currentUser.email}
-      currentUserId={currentUser.id}
+      currentUserEmail={resolvedCurrentUser.email}
+      currentUserId={resolvedCurrentUser.id}
       conversations={conversations}
       activeConversationId={activeConversationId}
       activeNav="analyse"

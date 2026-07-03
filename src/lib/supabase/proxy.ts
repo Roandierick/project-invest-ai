@@ -10,6 +10,7 @@ import {
 export interface SupabaseSessionUpdateResult {
   response: NextResponse;
   userId: string | null;
+  failed: boolean;
 }
 
 export async function updateSupabaseSession(
@@ -21,6 +22,7 @@ export async function updateSupabaseSession(
         request,
       }),
       userId: null,
+      failed: false,
     };
   }
 
@@ -28,31 +30,44 @@ export async function updateSupabaseSession(
     request,
   });
 
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+
+          response = NextResponse.next({
+            request,
+          });
+
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+    });
 
-        response = NextResponse.next({
-          request,
-        });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return {
-    response,
-    userId: user?.id ?? null,
-  };
+    return {
+      response,
+      userId: user?.id ?? null,
+      failed: false,
+    };
+  } catch {
+    return {
+      response: NextResponse.next({
+        request,
+      }),
+      userId: null,
+      failed: true,
+    };
+  }
 }

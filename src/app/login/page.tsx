@@ -48,13 +48,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     return <SupabaseSetupNotice />;
   }
 
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect(nextPath);
+    if (user) {
+      redirect(nextPath);
+    }
+  } catch {
+    // Laat de loginpagina renderen als Supabase server-side niet bruikbaar is.
   }
 
   return <AuthPanel nextPath={nextPath} />;
