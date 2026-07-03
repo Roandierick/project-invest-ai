@@ -15,6 +15,10 @@ export function isSupabaseConfigured(): boolean {
   );
 }
 
+export function shouldShowSupabaseSetupNotice(): boolean {
+  return process.env.NODE_ENV === "development" && !isSupabaseConfigured();
+}
+
 export function getSupabaseUrl(): string {
   return requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 }

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AuthPanel } from "@/components/persistent-analysis-workspace";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { shouldShowSupabaseSetupNotice } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 interface LoginPageProps {
@@ -42,7 +42,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const nextPath = normalizeNextPath(resolvedSearchParams.next);
 
-  if (!isSupabaseConfigured()) {
+  if (shouldShowSupabaseSetupNotice()) {
     return <SupabaseSetupNotice />;
   }
 

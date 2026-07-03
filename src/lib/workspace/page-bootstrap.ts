@@ -1,5 +1,5 @@
 import { loadWorkspaceBootstrap, type WorkspaceBootstrap } from "@/lib/conversations/repository";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { shouldShowSupabaseSetupNotice } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface WorkspaceUser {
@@ -22,7 +22,7 @@ const EMPTY_BOOTSTRAP: WorkspaceBootstrap = {
 export async function loadWorkspacePageBootstrap(
   preferredConversationId?: string | null,
 ): Promise<WorkspacePageBootstrap> {
-  if (!isSupabaseConfigured()) {
+  if (shouldShowSupabaseSetupNotice()) {
     return {
       isSupabaseConfigured: false,
       currentUser: null,
