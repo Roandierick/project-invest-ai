@@ -7,13 +7,10 @@ import {
 } from "@/components/content-page-sections";
 import { WorkspaceContentShell } from "@/components/workspace-content-shell";
 import { STRATEGIES } from "@/lib/content/content-pages";
-import { loadWorkspacePageBootstrap } from "@/lib/workspace/page-bootstrap";
 
 export default async function StrategieenPage() {
-  const bootstrap = await loadWorkspacePageBootstrap();
-
   return (
-    <WorkspaceContentShell {...bootstrap} activeNav="strategieen">
+    <WorkspaceContentShell activeNav="strategieen">
       <ContentPageIntro
         eyebrow="Vastgoedstrategieen"
         title="Zes strategieen die op de Belgische markt elk een andere discipline vragen"
@@ -51,7 +48,6 @@ export default async function StrategieenPage() {
       </ContentSection>
 
       <ContentCta
-        currentUserId={bootstrap.currentUser?.id}
         title="Zet een strategie om in een echte dealtoets"
         description="De snelste manier om een strategie te ontmythologiseren, is een concreet pand door de tool halen. Start een analyse en bekijk meteen of de netto-opbrengst, de lening en de instapkost passen bij de aanpak die u voor ogen hebt."
       />

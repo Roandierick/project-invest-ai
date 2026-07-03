@@ -1,54 +1,36 @@
 import { ContentTopbar } from "@/components/content-topbar";
 import { WorkspaceFrame } from "@/components/workspace-frame";
 import type { WorkspaceNavKey } from "@/components/workspace-sidebar";
-import type { WorkspacePageBootstrap } from "@/lib/workspace/page-bootstrap";
 
-interface WorkspaceContentShellProps extends WorkspacePageBootstrap {
+interface WorkspaceContentShellProps {
   activeNav: WorkspaceNavKey;
   children: React.ReactNode;
-}
-
-function SupabaseSetupNotice() {
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl items-center justify-center px-4 py-8 md:px-6">
-      <section className="app-shell-card rounded-[1.75rem] p-8 text-[var(--color-foreground)]">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--color-muted)]">
-          Setup vereist
-        </p>
-        <h1 className="mt-4 font-[family:var(--font-display)] text-4xl leading-tight">
-          Supabase env vars ontbreken nog
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
-          Vul eerst `NEXT_PUBLIC_SUPABASE_URL` en
-          `NEXT_PUBLIC_SUPABASE_ANON_KEY` in je `.env.local` in. Daarna laadt
-          de workspace met chatgeschiedenis en kennispagina&apos;s automatisch.
-        </p>
-      </section>
-    </main>
-  );
+  currentUser?: {
+    id: string;
+    email: string | null;
+  } | null;
+  conversations?: Array<{
+    id: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  activeConversationId?: string | null;
 }
 
 export function WorkspaceContentShell({
-  isSupabaseConfigured,
   currentUser,
-  initialBootstrap,
+  conversations = [],
+  activeConversationId,
   activeNav,
   children,
 }: WorkspaceContentShellProps) {
-  if (!isSupabaseConfigured) {
-    return <SupabaseSetupNotice />;
-  }
-
-  if (!currentUser) {
-    return null;
-  }
-
   return (
     <WorkspaceFrame
-      currentUserEmail={currentUser.email}
-      currentUserId={currentUser.id}
-      conversations={initialBootstrap.conversations}
-      activeConversationId={initialBootstrap.activeConversationId ?? undefined}
+      currentUserEmail={currentUser?.email ?? null}
+      currentUserId={currentUser?.id}
+      conversations={conversations}
+      activeConversationId={activeConversationId ?? undefined}
       activeNav={activeNav}
       topbar={<ContentTopbar activeNav={activeNav} />}
     >

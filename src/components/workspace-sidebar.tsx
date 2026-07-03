@@ -86,6 +86,7 @@ export function WorkspaceSidebar({
   const router = useRouter();
   const [localBusy, setLocalBusy] = useState(false);
   const disabled = busy || localBusy;
+  const isAuthenticated = Boolean(currentUserId);
 
   async function handleNewConversation() {
     onNavigate?.();
@@ -128,6 +129,11 @@ export function WorkspaceSidebar({
   async function handleLogout() {
     onNavigate?.();
 
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
     if (onLogout) {
       await onLogout();
       return;
@@ -159,7 +165,9 @@ export function WorkspaceSidebar({
               Analyseworkspace
             </h1>
             <p className="mt-2 max-w-xs text-sm leading-6 text-white/72">
-              Ingelogd als {currentUserEmail ?? "onbekend e-mailadres"}.
+              {isAuthenticated
+                ? `Ingelogd als ${currentUserEmail ?? "onbekend e-mailadres"}.`
+                : "Publieke gidsen over strategie, profielen en optimalisatie zonder login."}
             </p>
           </div>
           <div className="rounded-[1rem] bg-white/10 px-3 py-2 text-[0.72rem] text-white/76">
@@ -173,7 +181,7 @@ export function WorkspaceSidebar({
           disabled={disabled}
           className="mt-5 inline-flex w-full items-center justify-center rounded-[1rem] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[#F3F6FA] disabled:opacity-60"
         >
-          Nieuwe analyse
+          {isAuthenticated ? "Nieuwe analyse" : "Inloggen om te starten"}
         </button>
       </div>
 
@@ -274,7 +282,7 @@ export function WorkspaceSidebar({
               disabled={disabled}
               className="rounded-full border border-white/16 px-3 py-2 text-sm text-white/84 transition hover:bg-white/8 disabled:opacity-60"
             >
-              Uitloggen
+              {isAuthenticated ? "Uitloggen" : "Inloggen"}
             </button>
           </div>
         </div>

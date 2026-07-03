@@ -7,13 +7,10 @@ import {
 } from "@/components/content-page-sections";
 import { WorkspaceContentShell } from "@/components/workspace-content-shell";
 import { INVESTOR_TYPES } from "@/lib/content/content-pages";
-import { loadWorkspacePageBootstrap } from "@/lib/workspace/page-bootstrap";
 
 export default async function InvesteerdersPage() {
-  const bootstrap = await loadWorkspacePageBootstrap();
-
   return (
-    <WorkspaceContentShell {...bootstrap} activeNav="investeerders">
+    <WorkspaceContentShell activeNav="investeerders">
       <ContentPageIntro
         eyebrow="Investeerderstypes"
         title="Zes manieren waarop Belgische vastgoedinvesteerders naar dezelfde markt kijken"
@@ -48,7 +45,6 @@ export default async function InvesteerdersPage() {
       </ContentSection>
 
       <ContentCta
-        currentUserId={bootstrap.currentUser?.id}
         title="Toets uw eigen profiel meteen aan een concreet pand"
         description="Een profiel is pas nuttig als u het vertaalt naar een echte aankoopbeslissing. Start een nieuwe analyse en kijk of uw dossier vooral vraagt om rendementsdiscipline, financieringsruimte, hefboomcontrole of juist een successiebril."
       />

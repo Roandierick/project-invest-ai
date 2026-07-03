@@ -7,13 +7,10 @@ import {
 } from "@/components/content-page-sections";
 import { WorkspaceContentShell } from "@/components/workspace-content-shell";
 import { OPTIMIZATION_THEMES } from "@/lib/content/content-pages";
-import { loadWorkspacePageBootstrap } from "@/lib/workspace/page-bootstrap";
 
 export default async function OptimalisatiePage() {
-  const bootstrap = await loadWorkspacePageBootstrap();
-
   return (
-    <WorkspaceContentShell {...bootstrap} activeNav="optimalisatie">
+    <WorkspaceContentShell activeNav="optimalisatie">
       <ContentPageIntro
         eyebrow="Optimalisatiethema's"
         title="Optimalisatie begint niet bij trucs, maar bij een heldere Belgische vastgoedlogica"
@@ -47,7 +44,6 @@ export default async function OptimalisatiePage() {
       </ContentSection>
 
       <ContentCta
-        currentUserId={bootstrap.currentUser?.id}
         title="Laat een echt dossier zien waar optimalisatie zin heeft"
         description="Als u wilt weten of hefboom, financiering of successieplanning in uw situatie werkelijk waarde toevoegt, start dan een nieuwe analyse. De tool toont sneller dan theorie waar de winst zit en waar vooral extra risico schuilt."
       />

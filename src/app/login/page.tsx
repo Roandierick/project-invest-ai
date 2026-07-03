@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { AuthPanel } from "@/components/persistent-analysis-workspace";
@@ -41,6 +42,7 @@ function SupabaseSetupNotice() {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const nextPath = normalizeNextPath(resolvedSearchParams.next);
+  await connection();
 
   if (shouldShowSupabaseSetupNotice()) {
     return <SupabaseSetupNotice />;
