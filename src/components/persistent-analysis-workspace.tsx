@@ -42,6 +42,8 @@ const EMPTY_WORKSPACE_BOOTSTRAP: WorkspaceBootstrap = {
   activeConversation: null,
 };
 
+const WORKSPACE_INITIALIZATION_TIMEOUT_MS = 5_000;
+
 type ExtractionApiResponse = {
   merged: MergedListingExtraction;
   uploadedStoragePaths: string[];
@@ -548,6 +550,7 @@ export function PersistentAnalysisWorkspace({
   const [clientBootstrapReady, setClientBootstrapReady] = useState(
     currentUser !== null,
   );
+  const [showWorkspaceFallback, setShowWorkspaceFallback] = useState(false);
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(
     null,
   );
@@ -610,6 +613,14 @@ export function PersistentAnalysisWorkspace({
     applyWorkspaceBootstrap(EMPTY_WORKSPACE_BOOTSTRAP);
   }, [applyWorkspaceBootstrap]);
 
+  const openFallbackWorkspace = useCallback((message: string) => {
+    setShowWorkspaceFallback(true);
+    setWorkspaceBusy(false);
+    resetWorkspaceToEmpty();
+    setError((current) => current ?? message);
+    setClientBootstrapReady(true);
+  }, [resetWorkspaceToEmpty]);
+
   const syncWorkspace = useCallback(async (
     client: ReturnType<typeof createClient>,
     preferredConversationIdOverride?: string | null,
@@ -625,17 +636,32 @@ export function PersistentAnalysisWorkspace({
       setResolvedCurrentUser(nextUser);
 
       if (!nextUser) {
+        setShowWorkspaceFallback(false);
         resetWorkspaceToEmpty();
+        setError(null);
         return;
       }
 
-      const nextBootstrap = await loadWorkspaceBootstrap(
-        client,
-        preferredConversationIdOverride ?? null,
-      );
-      applyWorkspaceBootstrap(nextBootstrap);
+      try {
+        const nextBootstrap = await loadWorkspaceBootstrap(
+          client,
+          preferredConversationIdOverride ?? null,
+        );
+        applyWorkspaceBootstrap(nextBootstrap);
+        setShowWorkspaceFallback(false);
+        setError(null);
+      } catch (workspaceLoadError) {
+        setShowWorkspaceFallback(true);
+        resetWorkspaceToEmpty();
+        setError(
+          workspaceLoadError instanceof Error
+            ? workspaceLoadError.message
+            : "Workspace laden is mislukt.",
+        );
+      }
     } catch (workspaceError) {
       setResolvedCurrentUser(null);
+      setShowWorkspaceFallback(true);
       resetWorkspaceToEmpty();
       setError(
         workspaceError instanceof Error
@@ -650,6 +676,16 @@ export function PersistentAnalysisWorkspace({
 
   useEffect(() => {
     let isCancelled = false;
+    let initializationSettled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (isCancelled || initializationSettled) {
+        return;
+      }
+
+      openFallbackWorkspace(
+        "Workspace-initialisatie duurt langer dan verwacht. We tonen daarom alvast een lege workspace.",
+      );
+    }, WORKSPACE_INITIALIZATION_TIMEOUT_MS);
 
     async function initializeWorkspace() {
       try {
@@ -668,6 +704,7 @@ export function PersistentAnalysisWorkspace({
 
         setSupabase(null);
         setResolvedCurrentUser(null);
+        setShowWorkspaceFallback(true);
         resetWorkspaceToEmpty();
         setError(
           workspaceError instanceof Error
@@ -675,6 +712,9 @@ export function PersistentAnalysisWorkspace({
             : "Workspace initialiseren is mislukt.",
         );
         setClientBootstrapReady(true);
+      } finally {
+        initializationSettled = true;
+        window.clearTimeout(timeoutId);
       }
     }
 
@@ -682,8 +722,9 @@ export function PersistentAnalysisWorkspace({
 
     return () => {
       isCancelled = true;
+      window.clearTimeout(timeoutId);
     };
-  }, [preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
+  }, [openFallbackWorkspace, preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
 
   useEffect(() => {
     if (!supabase) {
@@ -1012,25 +1053,37 @@ export function PersistentAnalysisWorkspace({
     );
   }
 
-  if (!resolvedCurrentUser) {
+  if (!resolvedCurrentUser && !showWorkspaceFallback) {
     return <AuthPanel />;
   }
 
   return (
     <WorkspaceFrame
-      currentUserEmail={resolvedCurrentUser.email}
-      currentUserId={resolvedCurrentUser.id}
+      currentUserEmail={resolvedCurrentUser?.email ?? null}
+      currentUserId={resolvedCurrentUser?.id}
       conversations={conversations}
       activeConversationId={activeConversationId}
       activeNav="analyse"
       busy={workspaceBusy}
-      onNewConversation={() => void handleNewConversation()}
-      onSelectConversation={(conversationId) =>
-        void handleSelectConversation(conversationId)
+      onNewConversation={
+        resolvedCurrentUser ? () => void handleNewConversation() : undefined
       }
-      onLogout={() => void handleLogout()}
+      onSelectConversation={
+        resolvedCurrentUser
+          ? (conversationId) => void handleSelectConversation(conversationId)
+          : undefined
+      }
+      onLogout={resolvedCurrentUser ? () => void handleLogout() : undefined}
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(350px,470px)_minmax(0,1fr)]">
+        {showWorkspaceFallback && !resolvedCurrentUser ? (
+          <div className="rounded-[1.25rem] border border-[#F1D3B5] bg-[#FFF4E8] px-5 py-4 text-sm leading-6 text-[var(--color-warning)] xl:col-span-2">
+            De sessie of chatgeschiedenis kon niet tijdig geladen worden. De
+            lege workspace staat alvast open; ververs of log opnieuw in als
+            acties niet reageren.
+          </div>
+        ) : null}
+
         <section className={cardClassName()}>
           <div className="flex items-start justify-between gap-4">
             <div>
