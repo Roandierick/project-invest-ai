@@ -745,16 +745,6 @@ export function PersistentAnalysisWorkspace({
   }, []);
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void syncWorkspaceRef.current(supabase, preferredConversationIdRef.current);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
-
-  useEffect(() => {
     if (!hasInitializedWorkspaceRef.current) {
       return;
     }
