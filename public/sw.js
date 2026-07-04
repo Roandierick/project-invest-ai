@@ -1,6 +1,5 @@
-const CACHE_NAME = "project-invest-ai-v1";
+const CACHE_NAME = "project-invest-ai-v2";
 const APP_SHELL = [
-  "/",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -45,24 +44,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (event.request.mode === "navigate") {
+    return;
+  }
+
+  if (!APP_SHELL.includes(url.pathname)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) {
         return cached;
       }
 
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== "basic") {
-          return response;
-        }
-
-        const copy = response.clone();
-        void caches
-          .open(CACHE_NAME)
-          .then((cache) => cache.put(event.request, copy));
-
-        return response;
-      });
+      return fetch(event.request);
     }),
   );
 });
