@@ -1,56 +1,44 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import {
-  getSupabaseAnonKey,
-  getSupabaseUrl,
-  isSupabaseConfigured,
-} from "@/lib/supabase/env";
-
 export interface SupabaseSessionUpdateResult {
   response: NextResponse;
   userId: string | null;
   failed: boolean;
 }
 
-export async function updateSupabaseSession(
+export async function updateSession(
   request: NextRequest,
 ): Promise<SupabaseSessionUpdateResult> {
-  if (!isSupabaseConfigured()) {
-    return {
-      response: NextResponse.next({
-        request,
-      }),
-      userId: null,
-      failed: false,
-    };
-  }
-
   let response = NextResponse.next({
     request,
   });
 
   try {
-    const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value),
+            );
 
-          response = NextResponse.next({
-            request,
-          });
+            response = NextResponse.next({
+              request,
+            });
 
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options),
+            );
+          },
         },
       },
-    });
+    );
 
     const {
       data: { user },

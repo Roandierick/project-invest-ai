@@ -22,7 +22,7 @@ import {
   type ConversationSummary,
   type WorkspaceBootstrap,
 } from "@/lib/conversations/repository";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createClient } from "@/lib/supabase/client";
 import type { MergedListingExtraction } from "@/lib/vision/merge";
 
 interface WorkspaceUser {
@@ -31,7 +31,6 @@ interface WorkspaceUser {
 }
 
 interface PersistentAnalysisWorkspaceProps {
-  isSupabaseConfigured: boolean;
   currentUser: WorkspaceUser | null;
   initialBootstrap: WorkspaceBootstrap;
   preferredConversationId?: string | null;
@@ -368,7 +367,7 @@ export function AuthPanel({
     setMessage(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = createClient();
 
       if (mode === "signup") {
         const { error: signUpError } = await supabase.auth.signUp({
@@ -510,28 +509,7 @@ export function AuthPanel({
   );
 }
 
-function SupabaseSetupNotice() {
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl items-center justify-center px-4 py-8 md:px-6">
-      <section className="app-shell-card rounded-[1.75rem] p-8 text-[var(--color-foreground)]">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--color-muted)]">
-          Setup vereist
-        </p>
-        <h1 className="mt-4 font-[family:var(--font-display)] text-4xl leading-tight text-[var(--color-foreground)]">
-          Supabase env vars ontbreken nog
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
-          Vul eerst `NEXT_PUBLIC_SUPABASE_URL` en
-          `NEXT_PUBLIC_SUPABASE_ANON_KEY` in je `.env.local` in. Daarna laadt
-          de persistente auth- en chatflow automatisch.
-        </p>
-      </section>
-    </main>
-  );
-}
-
 export function PersistentAnalysisWorkspace({
-  isSupabaseConfigured,
   currentUser,
   initialBootstrap,
   preferredConversationId = null,
@@ -572,11 +550,11 @@ export function PersistentAnalysisWorkspace({
   } | null>(null);
   const [resolvedCurrentUser, setResolvedCurrentUser] = useState(currentUser);
   const [clientBootstrapReady, setClientBootstrapReady] = useState(
-    !isSupabaseConfigured || currentUser !== null,
+    currentUser !== null,
   );
-  const [supabase, setSupabase] = useState<
-    ReturnType<typeof getSupabaseBrowserClient> | null
-  >(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(
+    null,
+  );
 
   const latestResult = activeConversation?.latestResult ?? null;
   const currentEnrichmentContext =
@@ -637,7 +615,7 @@ export function PersistentAnalysisWorkspace({
   }, [applyWorkspaceBootstrap]);
 
   const syncWorkspace = useCallback(async (
-    client: ReturnType<typeof getSupabaseBrowserClient>,
+    client: ReturnType<typeof createClient>,
     preferredConversationIdOverride?: string | null,
   ) => {
     setWorkspaceBusy(true);
@@ -675,15 +653,11 @@ export function PersistentAnalysisWorkspace({
   }, [applyWorkspaceBootstrap, resetWorkspaceToEmpty]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      return;
-    }
-
     let isCancelled = false;
 
     async function initializeWorkspace() {
       try {
-        const client = getSupabaseBrowserClient();
+        const client = createClient();
 
         if (isCancelled) {
           return;
@@ -713,7 +687,7 @@ export function PersistentAnalysisWorkspace({
     return () => {
       isCancelled = true;
     };
-  }, [isSupabaseConfigured, preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
+  }, [preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
 
   useEffect(() => {
     if (!supabase) {
@@ -1022,10 +996,6 @@ export function PersistentAnalysisWorkspace({
     if (!composer.trim()) {
       setComposer("Neem de waarden uit de nieuwe foto's mee en herbekijk het dossier.");
     }
-  }
-
-  if (!isSupabaseConfigured) {
-    return <SupabaseSetupNotice />;
   }
 
   if (!clientBootstrapReady) {

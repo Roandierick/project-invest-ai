@@ -1,6 +1,8 @@
-import { loadWorkspaceBootstrap, type WorkspaceBootstrap } from "@/lib/conversations/repository";
-import { shouldShowSupabaseSetupNotice } from "@/lib/supabase/env";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  loadWorkspaceBootstrap,
+  type WorkspaceBootstrap,
+} from "@/lib/conversations/repository";
+import { createClient } from "@/lib/supabase/server";
 
 export interface WorkspaceUser {
   id: string;
@@ -8,7 +10,6 @@ export interface WorkspaceUser {
 }
 
 export interface WorkspacePageBootstrap {
-  isSupabaseConfigured: boolean;
   currentUser: WorkspaceUser | null;
   initialBootstrap: WorkspaceBootstrap;
 }
@@ -22,22 +23,13 @@ const EMPTY_BOOTSTRAP: WorkspaceBootstrap = {
 export async function loadWorkspacePageBootstrap(
   preferredConversationId?: string | null,
 ): Promise<WorkspacePageBootstrap> {
-  if (shouldShowSupabaseSetupNotice()) {
-    return {
-      isSupabaseConfigured: false,
-      currentUser: null,
-      initialBootstrap: EMPTY_BOOTSTRAP,
-    };
-  }
-
   try {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     return {
-      isSupabaseConfigured: true,
       currentUser: user ? { id: user.id, email: user.email ?? null } : null,
       initialBootstrap: user
         ? await loadWorkspaceBootstrap(supabase, preferredConversationId)
@@ -45,7 +37,6 @@ export async function loadWorkspacePageBootstrap(
     };
   } catch {
     return {
-      isSupabaseConfigured: true,
       currentUser: null,
       initialBootstrap: EMPTY_BOOTSTRAP,
     };

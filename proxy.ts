@@ -1,8 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { updateSupabaseSession } from "@/lib/supabase/proxy";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { updateSession } from "@/lib/supabase/proxy";
 
 function normalizeNextPath(pathname: string, search: string): string {
   const candidate = `${pathname}${search}`;
@@ -16,10 +15,9 @@ function normalizeNextPath(pathname: string, search: string): string {
 
 export async function proxy(request: NextRequest) {
   try {
-    const { response, userId, failed } = await updateSupabaseSession(request);
+    const { response, userId, failed } = await updateSession(request);
 
     if (
-      !isSupabaseConfigured() ||
       failed ||
       userId ||
       request.nextUrl.pathname === "/login"

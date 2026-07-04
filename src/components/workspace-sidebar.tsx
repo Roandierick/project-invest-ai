@@ -9,7 +9,7 @@ import {
   createConversation,
   type ConversationSummary,
 } from "@/lib/conversations/repository";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createClient } from "@/lib/supabase/client";
 
 export type WorkspaceNavKey =
   | "analyse"
@@ -104,7 +104,7 @@ export function WorkspaceSidebar({
     setLocalBusy(true);
 
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = createClient();
       const createdConversation = await createConversation(
         supabase,
         currentUserId,
@@ -142,7 +142,7 @@ export function WorkspaceSidebar({
     setLocalBusy(true);
 
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = createClient();
       await supabase.auth.signOut();
       router.push("/login");
       router.refresh();

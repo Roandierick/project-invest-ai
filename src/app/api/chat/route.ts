@@ -23,7 +23,7 @@ import {
   getAnthropicModel,
   hasAnthropicApiKey,
 } from "@/lib/supabase/env";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -279,7 +279,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { createConversation } from "@/lib/conversations/repository";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createClient } from "@/lib/supabase/client";
 
 interface StartAnalysisButtonProps {
   currentUserId?: string;
@@ -27,7 +27,7 @@ export function StartAnalysisButton({
     setBusy(true);
 
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = createClient();
       const conversation = await createConversation(supabase, currentUserId);
       router.push(`/?conversation=${conversation.id}`);
     } finally {

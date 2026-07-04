@@ -7,8 +7,8 @@ import {
   attachUploadsToSnapshot,
   ensureConversationSnapshot,
 } from "@/lib/conversations/repository";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { hasAnthropicApiKey } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 import { extractListingFromImage } from "@/lib/vision/anthropic";
 import { mergeImageExtractions } from "@/lib/vision/merge";
 import {
@@ -95,7 +95,7 @@ function formatResetMoment(resetAt: string): string {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
