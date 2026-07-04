@@ -745,7 +745,6 @@ export function PersistentAnalysisWorkspace({
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
