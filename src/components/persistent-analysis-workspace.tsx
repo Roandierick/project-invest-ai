@@ -711,6 +711,12 @@ export function PersistentAnalysisWorkspace({
           return;
         }
 
+        setWorkspaceBusy(true);
+
+        if (currentUser === null) {
+          setWorkspaceBusy(false);
+        }
+
         await syncWorkspaceRef.current(
           supabase,
           preferredConversationIdRef.current,
@@ -728,8 +734,11 @@ export function PersistentAnalysisWorkspace({
             ? workspaceError.message
             : "Workspace initialiseren is mislukt.",
         );
-        setClientBootstrapReady(true);
       } finally {
+        if (!isCancelled) {
+          setWorkspaceBusy(false);
+          setClientBootstrapReady(true);
+        }
         initializationSettled = true;
         hasInitializedWorkspaceRef.current = true;
         window.clearTimeout(timeoutId);
