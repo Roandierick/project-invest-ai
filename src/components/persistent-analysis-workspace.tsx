@@ -551,9 +551,7 @@ export function PersistentAnalysisWorkspace({
     currentUser !== null,
   );
   const [showWorkspaceFallback, setShowWorkspaceFallback] = useState(false);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(
-    null,
-  );
+  const supabase = useMemo(() => createClient(), []);
   const preferredConversationIdRef = useRef(preferredConversationId);
   const hasInitializedWorkspaceRef = useRef(false);
 
@@ -709,15 +707,12 @@ export function PersistentAnalysisWorkspace({
 
     async function initializeWorkspace() {
       try {
-        const client = createClient();
-
         if (isCancelled) {
           return;
         }
 
-        setSupabase(client);
         await syncWorkspaceRef.current(
-          client,
+          supabase,
           preferredConversationIdRef.current,
         );
       } catch (workspaceError) {
@@ -725,7 +720,6 @@ export function PersistentAnalysisWorkspace({
           return;
         }
 
-        setSupabase(null);
         setResolvedCurrentUser(null);
         setShowWorkspaceFallback(true);
         resetWorkspaceToEmpty();
@@ -751,10 +745,6 @@ export function PersistentAnalysisWorkspace({
   }, []);
 
   useEffect(() => {
-    if (!supabase) {
-      return;
-    }
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
@@ -765,7 +755,7 @@ export function PersistentAnalysisWorkspace({
   }, [supabase]);
 
   useEffect(() => {
-    if (!supabase || !hasInitializedWorkspaceRef.current) {
+    if (!hasInitializedWorkspaceRef.current) {
       return;
     }
 
@@ -773,10 +763,6 @@ export function PersistentAnalysisWorkspace({
   }, [preferredConversationId, supabase]);
 
   async function refreshWorkspace(preferredConversationId?: string | null) {
-    if (!supabase) {
-      return;
-    }
-
     const next = await loadWorkspaceBootstrap(
       supabase,
       preferredConversationId ?? activeConversationId ?? null,
@@ -786,7 +772,7 @@ export function PersistentAnalysisWorkspace({
   }
 
   async function ensureConversation(): Promise<string> {
-    if (!supabase || !resolvedCurrentUser) {
+    if (!resolvedCurrentUser) {
       throw new Error("Geen actieve gebruiker beschikbaar.");
     }
 
@@ -824,10 +810,6 @@ export function PersistentAnalysisWorkspace({
   }
 
   async function handleLogout() {
-    if (!supabase) {
-      return;
-    }
-
     try {
       await supabase.auth.signOut();
       router.push("/login");
@@ -842,7 +824,7 @@ export function PersistentAnalysisWorkspace({
   }
 
   async function handleNewConversation() {
-    if (!supabase || !resolvedCurrentUser) {
+    if (!resolvedCurrentUser) {
       return;
     }
 
