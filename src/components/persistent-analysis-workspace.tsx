@@ -396,8 +396,7 @@ export function AuthPanel() {
           throw signInError;
         }
 
-        router.push("/");
-        router.refresh();
+        window.location.href = "/";
       }
     } catch (submissionError) {
       setError(
