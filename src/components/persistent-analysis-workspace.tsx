@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AnalysisResultsCard } from "@/components/analysis-results-card";
@@ -554,6 +554,8 @@ export function PersistentAnalysisWorkspace({
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(
     null,
   );
+  const preferredConversationIdRef = useRef(preferredConversationId);
+  const hasInitializedWorkspaceRef = useRef(false);
 
   const latestResult = activeConversation?.latestResult ?? null;
   const currentEnrichmentContext =
@@ -602,6 +604,10 @@ export function PersistentAnalysisWorkspace({
     [selectedFilePreviews],
   );
 
+  useEffect(() => {
+    preferredConversationIdRef.current = preferredConversationId;
+  }, [preferredConversationId]);
+
   const applyWorkspaceBootstrap = useCallback((next: WorkspaceBootstrap) => {
     setConversations(next.conversations);
     setActiveConversationId(next.activeConversationId ?? "");
@@ -610,8 +616,11 @@ export function PersistentAnalysisWorkspace({
   }, []);
 
   const resetWorkspaceToEmpty = useCallback(() => {
-    applyWorkspaceBootstrap(EMPTY_WORKSPACE_BOOTSTRAP);
-  }, [applyWorkspaceBootstrap]);
+    setConversations(EMPTY_WORKSPACE_BOOTSTRAP.conversations);
+    setActiveConversationId("");
+    setActiveConversation(null);
+    setForm(emptyForm());
+  }, []);
 
   const openFallbackWorkspace = useCallback((message: string) => {
     setShowWorkspaceFallback(true);
@@ -674,6 +683,17 @@ export function PersistentAnalysisWorkspace({
     }
   }, [applyWorkspaceBootstrap, resetWorkspaceToEmpty]);
 
+  const syncWorkspaceRef = useRef(syncWorkspace);
+  const openFallbackWorkspaceRef = useRef(openFallbackWorkspace);
+
+  useEffect(() => {
+    syncWorkspaceRef.current = syncWorkspace;
+  }, [syncWorkspace]);
+
+  useEffect(() => {
+    openFallbackWorkspaceRef.current = openFallbackWorkspace;
+  }, [openFallbackWorkspace]);
+
   useEffect(() => {
     let isCancelled = false;
     let initializationSettled = false;
@@ -682,7 +702,7 @@ export function PersistentAnalysisWorkspace({
         return;
       }
 
-      openFallbackWorkspace(
+      openFallbackWorkspaceRef.current(
         "Workspace-initialisatie duurt langer dan verwacht. We tonen daarom alvast een lege workspace.",
       );
     }, WORKSPACE_INITIALIZATION_TIMEOUT_MS);
@@ -696,7 +716,10 @@ export function PersistentAnalysisWorkspace({
         }
 
         setSupabase(client);
-        await syncWorkspace(client, preferredConversationId);
+        await syncWorkspaceRef.current(
+          client,
+          preferredConversationIdRef.current,
+        );
       } catch (workspaceError) {
         if (isCancelled) {
           return;
@@ -714,6 +737,7 @@ export function PersistentAnalysisWorkspace({
         setClientBootstrapReady(true);
       } finally {
         initializationSettled = true;
+        hasInitializedWorkspaceRef.current = true;
         window.clearTimeout(timeoutId);
       }
     }
@@ -724,7 +748,7 @@ export function PersistentAnalysisWorkspace({
       isCancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [openFallbackWorkspace, preferredConversationId, resetWorkspaceToEmpty, syncWorkspace]);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -734,11 +758,19 @@ export function PersistentAnalysisWorkspace({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void syncWorkspace(supabase, preferredConversationId);
+      void syncWorkspaceRef.current(supabase, preferredConversationIdRef.current);
     });
 
     return () => subscription.unsubscribe();
-  }, [preferredConversationId, supabase, syncWorkspace]);
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase || !hasInitializedWorkspaceRef.current) {
+      return;
+    }
+
+    void syncWorkspaceRef.current(supabase, preferredConversationId);
+  }, [preferredConversationId, supabase]);
 
   async function refreshWorkspace(preferredConversationId?: string | null) {
     if (!supabase) {
