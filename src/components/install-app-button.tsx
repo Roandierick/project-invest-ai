@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -33,36 +33,26 @@ interface InstallAppButtonProps {
 export function InstallAppButton({ compact = false }: InstallAppButtonProps) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [{ isIos, isStandalone }, setPlatformState] = useState(() =>
-    detectIosStandalone(),
+  const { isIos, isStandalone } = useSyncExternalStore(
+    () => () => undefined,
+    detectIosStandalone,
+    () => ({ isIos: false, isStandalone: false }),
   );
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    function syncPlatformState() {
-      setPlatformState(detectIosStandalone());
-    }
-
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
     }
 
-    function handleAppInstalled() {
-      setDeferredPrompt(null);
-      syncPlatformState();
-    }
-
-    syncPlatformState();
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
-      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
