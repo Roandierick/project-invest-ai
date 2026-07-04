@@ -20,7 +20,8 @@ export async function proxy(request: NextRequest) {
     if (
       failed ||
       userId ||
-      request.nextUrl.pathname === "/login"
+      request.nextUrl.pathname === "/login" ||
+      request.nextUrl.pathname === "/auth/callback"
     ) {
       return response;
     }

@@ -347,11 +347,7 @@ function renderTextField(
   );
 }
 
-export function AuthPanel({
-  nextPath = "/",
-}: {
-  nextPath?: string;
-}) {
+export function AuthPanel() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -375,7 +371,7 @@ export function AuthPanel({
           password,
           options: {
             emailRedirectTo: new URL(
-              `/login?next=${encodeURIComponent(nextPath)}`,
+              "/auth/callback",
               window.location.origin,
             ).toString(),
           },
@@ -398,7 +394,7 @@ export function AuthPanel({
           throw signInError;
         }
 
-        router.push(nextPath);
+        router.push("/");
         router.refresh();
       }
     } catch (submissionError) {
@@ -1017,11 +1013,7 @@ export function PersistentAnalysisWorkspace({
   }
 
   if (!resolvedCurrentUser) {
-    const nextPath = preferredConversationId
-      ? `/?conversation=${encodeURIComponent(preferredConversationId)}`
-      : "/";
-
-    return <AuthPanel nextPath={nextPath} />;
+    return <AuthPanel />;
   }
 
   return (

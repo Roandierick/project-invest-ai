@@ -4,23 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthPanel } from "@/components/persistent-analysis-workspace";
 import { createClient } from "@/lib/supabase/server";
 
-interface LoginPageProps {
-  searchParams?: Promise<{
-    next?: string;
-  }>;
-}
-
-function normalizeNextPath(value?: string): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
-}
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const nextPath = normalizeNextPath(resolvedSearchParams.next);
+export default async function LoginPage() {
   await connection();
 
   try {
@@ -30,11 +14,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     } = await supabase.auth.getUser();
 
     if (user) {
-      redirect(nextPath);
+      redirect("/");
     }
   } catch {
     // Laat de loginpagina renderen als Supabase server-side niet bruikbaar is.
   }
 
-  return <AuthPanel nextPath={nextPath} />;
+  return <AuthPanel />;
 }
