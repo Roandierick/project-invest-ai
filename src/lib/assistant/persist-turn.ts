@@ -31,10 +31,12 @@ export interface PersistTurnInput {
 export async function persistConversationTurn(
   input: PersistTurnInput,
 ): Promise<void> {
+  const derivedTitle = deriveTitle(input.form);
+
   if (input.createSnapshot) {
     const snapshot = await appendAnalysisSnapshot(input.client, {
       conversationId: input.conversationId,
-      title: deriveTitle(input.form),
+      title: derivedTitle,
       form: input.form,
       enrichmentContext: input.enrichmentContext ?? null,
       calculatedResults: input.calculatedResults ?? berekenBasisAnalyse(input.form),
@@ -54,7 +56,7 @@ export async function persistConversationTurn(
 
   await appendMessagePair(input.client, {
     conversationId: input.conversationId,
-    title: deriveTitle(input.form),
+    title: derivedTitle,
     userMessage: input.userMessage,
     assistantMessage: input.assistantMessage,
   });

@@ -154,7 +154,7 @@ function MetricTile({
   detail: string;
 }) {
   return (
-    <article className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 shadow-[0_8px_20px_rgba(27,58,92,0.05)]">
+    <article className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 shadow-[0_16px_30px_rgba(0,0,0,0.22)]">
       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
         {label}
       </p>
@@ -218,7 +218,7 @@ export function AnalysisResultsCard({
   const geopuntBadge = deriveGeopuntBadge(enrichmentContext);
 
   return (
-    <section className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[0_12px_30px_rgba(27,58,92,0.07)]">
+    <section className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[0_22px_42px_rgba(0,0,0,0.26)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -231,8 +231,8 @@ export function AnalysisResultsCard({
         <div
           className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
             result.status === "complete"
-              ? "bg-[#EAF4EE] text-[var(--color-success)]"
-              : "bg-[#FFF4E8] text-[var(--color-warning)]"
+              ? "bg-[rgba(45,106,79,0.2)] text-[var(--color-success)]"
+              : "bg-[rgba(180,83,9,0.18)] text-[var(--color-warning)]"
           }`}
         >
           {result.status === "complete" ? "Analyse volledig" : "Analyse gedeeltelijk"}

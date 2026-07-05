@@ -271,19 +271,24 @@ export function summarizeSubmission(form: AnalysisFormState): string {
 }
 
 export function deriveTitle(form: AnalysisFormState): string {
-  if (form.gemeente && form.pandtype) {
-    return `${form.pandtype} in ${form.gemeente}`;
+  const parts: string[] = [];
+  const pandtype = form.pandtype.trim();
+  const aankoopprijs = parseOptionalNumber(form.aankoopprijs);
+  const gemeente = form.gemeente.trim();
+
+  if (pandtype) {
+    parts.push(pandtype.toLowerCase());
   }
 
-  if (form.gemeente) {
-    return `Analyse ${form.gemeente}`;
+  if (aankoopprijs !== undefined) {
+    parts.push(formatCurrency(aankoopprijs));
   }
 
-  if (form.aankoopprijs) {
-    return `Analyse ${formatCurrency(parseOptionalNumber(form.aankoopprijs))}`;
+  if (gemeente) {
+    parts.push(gemeente);
   }
 
-  return "Nieuwe analyse";
+  return parts.length > 0 ? parts.join(", ") : "Nieuwe analyse";
 }
 
 export function mergeFormPatch(

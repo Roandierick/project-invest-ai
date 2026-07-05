@@ -66,7 +66,7 @@ export function WorkspaceFrame({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="flex items-center justify-between gap-4 rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[0_8px_24px_rgba(27,58,92,0.06)] lg:hidden">
+          <header className="flex items-center justify-between gap-4 rounded-[1.5rem] border border-[var(--color-border)] bg-[rgba(33,33,33,0.92)] px-4 py-3 shadow-[0_18px_38px_rgba(0,0,0,0.24)] backdrop-blur lg:hidden">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
                 Project Invest AI
@@ -79,7 +79,7 @@ export function WorkspaceFrame({
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] text-[var(--color-primary)] transition hover:border-[var(--color-primary)]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] text-[var(--color-foreground)] transition hover:border-[var(--color-primary)] hover:text-white"
               aria-label="Open navigatie"
             >
               <svg
@@ -104,7 +104,7 @@ export function WorkspaceFrame({
       </div>
 
       {sidebarOpen ? (
-        <div className="fixed inset-0 z-50 bg-[rgba(16,24,40,0.36)] lg:hidden">
+        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.58)] lg:hidden">
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -124,13 +124,13 @@ export function WorkspaceFrame({
               onNewConversation={onNewConversation}
               onSelectConversation={onSelectConversation}
               onLogout={onLogout}
-              className="h-full shadow-[0_20px_48px_rgba(15,23,42,0.22)]"
+              className="h-full shadow-[0_24px_54px_rgba(0,0,0,0.38)]"
             />
 
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white"
+              className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-[rgba(0,0,0,0.38)] text-white"
               aria-label="Sluit menu"
             >
               <svg

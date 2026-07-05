@@ -3,15 +3,15 @@
 :root {
   --color-primary: #1b3a5c;
   --color-primary-strong: #14304b;
-  --color-background: #f7f5f2;
-  --color-surface: #ffffff;
-  --color-surface-alt: #fbfaf8;
-  --color-border: #e8e5e1;
-  --color-foreground: #1a1a1a;
-  --color-muted: #6b6b6b;
-  --color-success: #2d6a4f;
-  --color-warning: #b45309;
-  --color-danger: #991b1b;
+  --color-background: #1a1a1a;
+  --color-surface: #212121;
+  --color-surface-alt: #2f2f2f;
+  --color-border: #3d3d3d;
+  --color-foreground: #ececec;
+  --color-muted: #8e8ea0;
+  --color-success: #5cb88a;
+  --color-warning: #e5ad72;
+  --color-danger: #ef9a9a;
 }
 
 @theme inline {
@@ -22,12 +22,16 @@
 }
 
 html {
+  color-scheme: dark;
   background: var(--color-background);
 }
 
 body {
   min-height: 100vh;
-  background: var(--color-background);
+  background:
+    radial-gradient(circle at top, rgba(27, 58, 92, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 24%),
+    var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-inter), sans-serif;
   line-height: 1.6;
@@ -35,7 +39,7 @@ body {
 }
 
 ::selection {
-  background: rgba(27, 58, 92, 0.14);
+  background: rgba(27, 58, 92, 0.32);
   color: var(--color-foreground);
 }
 
@@ -52,18 +56,18 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #8e8a84;
+  color: var(--color-muted);
 }
 
 .app-shell-card {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 12px 30px rgba(27, 58, 92, 0.07);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32);
 }
 
 .subtle-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #c8c4bf transparent;
+  scrollbar-color: #545462 transparent;
 }
 
 .subtle-scrollbar::-webkit-scrollbar {
@@ -78,13 +82,13 @@ textarea::placeholder {
   border: 3px solid transparent;
   border-radius: 999px;
   background-clip: content-box;
-  background-color: #c8c4bf;
+  background-color: #545462;
 }
 
 .skeleton-line {
   position: relative;
   overflow: hidden;
-  background: #ece8e3;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .skeleton-line::after {
@@ -95,7 +99,7 @@ textarea::placeholder {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.7) 45%,
+    rgba(255, 255, 255, 0.14) 45%,
     rgba(255, 255, 255, 0) 100%
   );
   animation: skeleton-shimmer 1.4s ease-in-out infinite;

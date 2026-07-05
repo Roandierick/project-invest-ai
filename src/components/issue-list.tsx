@@ -16,19 +16,19 @@ const ISSUE_STYLES: Record<
   missing: {
     label: "Vul dit aan",
     className:
-      "border-[var(--color-border)] bg-[var(--color-surface-alt)] text-[var(--color-foreground)]",
-    iconClassName: "bg-[#D7D2CB] text-[#4E4B47]",
+      "border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-foreground)]",
+    iconClassName: "bg-[var(--color-surface)] text-[var(--color-muted)]",
   },
   info: {
     label: "Info",
     className:
-      "border-[#D5E4F5] bg-[#EEF4FB] text-[var(--color-primary)]",
+      "border-[rgba(27,58,92,0.42)] bg-[rgba(27,58,92,0.2)] text-[var(--color-foreground)]",
     iconClassName: "bg-[var(--color-primary)] text-white",
   },
   warning: {
     label: "Waarschuwing",
     className:
-      "border-[#F1D3B5] bg-[#FFF4E8] text-[var(--color-warning)]",
+      "border-[rgba(229,173,114,0.38)] bg-[rgba(180,83,9,0.18)] text-[var(--color-warning)]",
     iconClassName: "bg-[var(--color-warning)] text-white",
   },
 };
@@ -77,7 +77,7 @@ export function IssueList({
 }: IssueListProps) {
   if (issues.length === 0) {
     return (
-      <div className="rounded-[1.25rem] border border-[#D3E6DB] bg-[#F1F8F4] px-4 py-4 text-sm text-[var(--color-success)]">
+      <div className="rounded-[1.25rem] border border-[rgba(92,184,138,0.34)] bg-[rgba(45,106,79,0.18)] px-4 py-4 text-sm text-[var(--color-success)]">
         {emptyMessage}
       </div>
     );

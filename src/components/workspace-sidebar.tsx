@@ -35,31 +35,26 @@ const NAV_ITEMS: Array<{
   key: WorkspaceNavKey;
   href: string;
   label: string;
-  description: string;
 }> = [
   {
     key: "analyse",
     href: "/",
     label: "Analyse",
-    description: "Chatflow en rekenmodules",
   },
   {
     key: "investeerders",
     href: "/investeerders",
     label: "Investeerders",
-    description: "Profielen en valkuilen",
   },
   {
     key: "strategieen",
     href: "/strategieen",
     label: "Strategieen",
-    description: "Vastgoedaanpakken in Belgie",
   },
   {
     key: "optimalisatie",
     href: "/optimalisatie",
     label: "Optimalisatie",
-    description: "Structuur, fiscus en overdracht",
   },
 ];
 
@@ -68,6 +63,84 @@ function formatDateTime(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function NavIcon({ itemKey }: { itemKey: WorkspaceNavKey }) {
+  if (itemKey === "analyse") {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 19h16" />
+        <path d="M7 16V9" />
+        <path d="M12 16V5" />
+        <path d="M17 16v-3" />
+      </svg>
+    );
+  }
+
+  if (itemKey === "investeerders") {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M16 19a4 4 0 0 0-8 0" />
+        <circle cx="12" cy="9" r="3" />
+        <path d="M5 19a3 3 0 0 1 3-3" />
+        <path d="M19 19a3 3 0 0 0-3-3" />
+      </svg>
+    );
+  }
+
+  if (itemKey === "strategieen") {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 3l7 3-7 3-7-3 7-3z" />
+        <path d="M5 11l7 3 7-3" />
+        <path d="M5 16l7 3 7-3" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </svg>
+  );
 }
 
 export function WorkspaceSidebar({
@@ -153,138 +226,136 @@ export function WorkspaceSidebar({
 
   return (
     <aside
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-[var(--color-primary)] text-white ${className ?? ""}`}
+      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-[#242424] bg-[#171717] text-[var(--color-foreground)] ${className ?? ""}`}
     >
-      <div className="border-b border-white/10 px-5 py-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/58">
+      <div className="border-b border-white/6 px-4 pb-4 pt-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-white/40">
               Project Invest AI
             </p>
-            <h1 className="mt-3 font-[family:var(--font-display)] text-2xl text-white">
+            <p className="mt-2 text-sm font-semibold text-white">
               Analyseworkspace
-            </h1>
-            <p className="mt-2 max-w-xs text-sm leading-6 text-white/72">
+            </p>
+            <p className="mt-1 truncate text-xs text-white/52">
               {isAuthenticated
-                ? `Ingelogd als ${currentUserEmail ?? "onbekend e-mailadres"}.`
-                : "Publieke gidsen over strategie, profielen en optimalisatie zonder login."}
+                ? currentUserEmail ?? "Ingelogde gebruiker"
+                : "Publieke gidsen en analysechat"}
             </p>
           </div>
-          <div className="rounded-[1rem] bg-white/10 px-3 py-2 text-[0.72rem] text-white/76">
-            {conversations.length} analyses
+          <div className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-[0.68rem] text-white/58">
+            {conversations.length}
           </div>
         </div>
+
+        <nav className="mt-4 grid grid-cols-2 gap-2">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.key === activeNav;
+
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-2 rounded-[0.95rem] border px-3 py-2.5 text-xs font-medium transition ${
+                  isActive
+                    ? "border-[rgba(27,58,92,0.75)] bg-[rgba(27,58,92,0.36)] text-white"
+                    : "border-white/8 bg-white/[0.02] text-white/68 hover:bg-white/[0.05] hover:text-white"
+                }`}
+              >
+                <span
+                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                    isActive
+                      ? "bg-white/10 text-white"
+                      : "bg-[var(--color-surface)] text-white/70"
+                  }`}
+                >
+                  <NavIcon itemKey={item.key} />
+                </span>
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
         <button
           type="button"
           onClick={() => void handleNewConversation()}
           disabled={disabled}
-          className="mt-5 inline-flex w-full items-center justify-center rounded-[1rem] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[#F3F6FA] disabled:opacity-60"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-[1rem] bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(27,58,92,0.34)] transition hover:bg-[var(--color-primary-strong)] disabled:opacity-60"
         >
           {isAuthenticated ? "Nieuwe analyse" : "Inloggen om te starten"}
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 px-5 py-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white/54">
-              Chatgeschiedenis
-            </p>
-            {busy ? (
-              <span className="text-[0.68rem] text-white/54">Bezig met laden</span>
-            ) : null}
-          </div>
-
-          <div className="subtle-scrollbar mt-4 max-h-full space-y-3 overflow-y-auto pr-1">
-            {busy ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <div
-                  key={`sidebar-skeleton-${index}`}
-                  className="rounded-[1.2rem] border border-white/10 bg-white/6 px-4 py-4"
-                >
-                  <div className="skeleton-line h-4 rounded-full bg-white/16" />
-                  <div className="skeleton-line mt-3 h-3 w-24 rounded-full bg-white/12" />
-                </div>
-              ))
-            ) : conversations.length === 0 ? (
-              <div className="rounded-[1.2rem] border border-white/10 bg-white/6 px-4 py-4 text-sm leading-6 text-white/72">
-                Nog geen analyses - start er een.
-              </div>
-            ) : (
-              conversations.map((conversation) => {
-                const isActive =
-                  activeNav === "analyse" &&
-                  conversation.id === activeConversationId;
-
-                return (
-                  <button
-                    key={conversation.id}
-                    type="button"
-                    onClick={() => void handleSelectConversation(conversation.id)}
-                    disabled={disabled}
-                    className={`w-full rounded-[1.2rem] border px-4 py-4 text-left transition ${
-                      isActive
-                        ? "border-white/22 bg-white/14"
-                        : "border-white/8 bg-white/5 hover:bg-white/9"
-                    }`}
-                  >
-                    <p className="truncate text-sm font-semibold text-white">
-                      {conversation.title}
-                    </p>
-                    <p className="mt-2 text-xs text-white/58">
-                      {formatDateTime(conversation.updatedAt)}
-                    </p>
-                  </button>
-                );
-              })
-            )}
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
+        <div className="flex items-center justify-between gap-3 px-1">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white/42">
+            Chatgeschiedenis
+          </p>
+          {busy ? (
+            <span className="text-[0.68rem] text-white/42">Laden...</span>
+          ) : null}
         </div>
 
-        <div className="border-t border-white/10 px-5 py-5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white/54">
-            Navigatie
-          </p>
-          <div className="mt-3 space-y-2">
-            {NAV_ITEMS.map((item) => {
-              const isActive = item.key === activeNav;
+        <div className="subtle-scrollbar mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+          {busy ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={`sidebar-skeleton-${index}`}
+                className="rounded-[1.1rem] border border-white/8 bg-white/[0.03] px-4 py-4"
+              >
+                <div className="skeleton-line h-4 rounded-full" />
+                <div className="skeleton-line mt-3 h-3 w-24 rounded-full" />
+              </div>
+            ))
+          ) : conversations.length === 0 ? (
+            <div className="rounded-[1.15rem] border border-dashed border-white/8 bg-white/[0.02] px-4 py-5 text-sm leading-6 text-white/58">
+              Nog geen analyses. Start er eentje en de chat verschijnt hier
+              automatisch.
+            </div>
+          ) : (
+            conversations.map((conversation) => {
+              const isActive =
+                activeNav === "analyse" &&
+                conversation.id === activeConversationId;
 
               return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`block rounded-[1rem] px-4 py-3 transition ${
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => void handleSelectConversation(conversation.id)}
+                  disabled={disabled}
+                  className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
                     isActive
-                      ? "bg-white text-[var(--color-primary)]"
-                      : "text-white/78 hover:bg-white/8 hover:text-white"
+                      ? "border-[rgba(27,58,92,0.72)] bg-[rgba(27,58,92,0.22)]"
+                      : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]"
                   }`}
                 >
-                  <p className="text-sm font-semibold">{item.label}</p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      isActive ? "text-[var(--color-muted)]" : "text-white/52"
-                    }`}
-                  >
-                    {item.description}
+                  <p className="truncate text-sm font-medium text-white">
+                    {conversation.title}
                   </p>
-                </Link>
+                  <p className="mt-2 text-xs text-white/44">
+                    {formatDateTime(conversation.updatedAt)}
+                  </p>
+                </button>
               );
-            })}
-          </div>
+            })
+          )}
+        </div>
+      </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <InstallAppButton />
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={disabled}
-              className="rounded-full border border-white/16 px-3 py-2 text-sm text-white/84 transition hover:bg-white/8 disabled:opacity-60"
-            >
-              {isAuthenticated ? "Uitloggen" : "Inloggen"}
-            </button>
-          </div>
+      <div className="border-t border-white/6 px-3 py-3">
+        <div className="space-y-2">
+          <InstallAppButton />
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={disabled}
+            className="w-full rounded-[1rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-white/82 transition hover:bg-white/[0.06] disabled:opacity-60"
+          >
+            {isAuthenticated ? "Uitloggen" : "Inloggen"}
+          </button>
         </div>
       </div>
     </aside>

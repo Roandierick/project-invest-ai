@@ -4,17 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AnalysisResultsCard } from "@/components/analysis-results-card";
+import { ChatMarkdown } from "@/components/chat-markdown";
 import { IssueList } from "@/components/issue-list";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { WorkspaceFrame } from "@/components/workspace-frame";
 import {
   emptyForm,
   mergeFormPatch,
-  parseOptionalNumber,
   summarizeSubmission,
 } from "@/lib/analysis/form";
 import type { AnalysisFormState, BooleanChoice } from "@/lib/analysis/types";
-import { formatCurrency } from "@/lib/calc-engine";
 import {
   createConversation,
   loadWorkspaceBootstrap,
@@ -263,19 +262,6 @@ const ECB_MARKET_REFERENCE = {
   sourceLabel: "ECB MIR housing loans, Belgium",
 };
 
-const percentPointFormatter = new Intl.NumberFormat("nl-BE", {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
-
-function formatPercentPoints(value?: number): string {
-  if (value === undefined || Number.isNaN(value)) {
-    return "n.v.t.";
-  }
-
-  return `${percentPointFormatter.format(value)}%`;
-}
-
 function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("nl-BE", {
     dateStyle: "medium",
@@ -297,6 +283,18 @@ function cardClassName() {
 
 function mutedPillClassName() {
   return "rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-muted)]";
+}
+
+function warningPanelClassName() {
+  return "rounded-[1rem] border border-[rgba(229,173,114,0.38)] bg-[rgba(180,83,9,0.18)] px-4 py-3 text-sm leading-6 text-[var(--color-warning)]";
+}
+
+function dangerPanelClassName() {
+  return "rounded-[1rem] border border-[rgba(239,154,154,0.3)] bg-[rgba(153,27,27,0.18)] px-4 py-3 text-sm text-[var(--color-danger)]";
+}
+
+function successPanelClassName() {
+  return "rounded-[1rem] border border-[rgba(92,184,138,0.34)] bg-[rgba(45,106,79,0.18)] px-4 py-3 text-sm text-[var(--color-success)]";
 }
 
 function renderSelectedFileSummary(files: File[]) {
@@ -350,7 +348,6 @@ function renderTextField(
 }
 
 export function AuthPanel() {
-  const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -411,8 +408,8 @@ export function AuthPanel() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-4 py-8 md:px-6">
-      <section className="grid w-full gap-6 rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[0_12px_30px_rgba(27,58,92,0.08)] lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
-        <div className="rounded-[1.5rem] bg-[var(--color-primary)] p-6 text-white">
+      <section className="grid w-full gap-6 rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[0_28px_60px_rgba(0,0,0,0.34)] lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+        <div className="rounded-[1.5rem] bg-[linear-gradient(160deg,rgba(27,58,92,0.95),rgba(10,16,26,0.92))] p-6 text-white">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/62">
             Project Invest AI
           </p>
@@ -476,17 +473,9 @@ export function AuthPanel() {
               />
             </label>
 
-            {message ? (
-              <div className="rounded-2xl border border-[#D3E6DB] bg-[#F1F8F4] px-4 py-3 text-sm text-[var(--color-success)]">
-                {message}
-              </div>
-            ) : null}
+            {message ? <div className={successPanelClassName()}>{message}</div> : null}
 
-            {error ? (
-              <div className="rounded-2xl border border-[#E7C7C7] bg-[#FAEEEE] px-4 py-3 text-sm text-[var(--color-danger)]">
-                {error}
-              </div>
-            ) : null}
+            {error ? <div className={dangerPanelClassName()}>{error}</div> : null}
 
             <button
               type="submit"
@@ -551,8 +540,13 @@ export function PersistentAnalysisWorkspace({
   );
   const [showWorkspaceFallback, setShowWorkspaceFallback] = useState(false);
   const supabase = useMemo(() => createClient(), []);
+  const chatSectionRef = useRef<HTMLElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const preferredConversationIdRef = useRef(preferredConversationId);
   const hasInitializedWorkspaceRef = useRef(false);
+  const shouldScrollToChatRef = useRef(false);
+  const currentUserRef = useRef(currentUser);
+  const supabaseRef = useRef(supabase);
 
   const latestResult = activeConversation?.latestResult ?? null;
   const currentEnrichmentContext =
@@ -594,6 +588,26 @@ export function PersistentAnalysisWorkspace({
     ];
   }, [activeConversation?.messages, streamingTurn]);
 
+  const scrollChatSectionIntoView = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      chatSectionRef.current?.scrollIntoView({
+        behavior,
+        block: "start",
+      });
+    },
+    [],
+  );
+
+  const scrollChatEndIntoView = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      chatEndRef.current?.scrollIntoView({
+        behavior,
+        block: "end",
+      });
+    },
+    [],
+  );
+
   useEffect(
     () => () => {
       revokePreviewUrls(selectedFilePreviews);
@@ -604,6 +618,30 @@ export function PersistentAnalysisWorkspace({
   useEffect(() => {
     preferredConversationIdRef.current = preferredConversationId;
   }, [preferredConversationId]);
+
+  useEffect(() => {
+    if (displayedMessages.length === 0 && !latestResult && !chatBusy) {
+      return;
+    }
+
+    const behavior = shouldScrollToChatRef.current ? "smooth" : "auto";
+
+    window.requestAnimationFrame(() => {
+      if (shouldScrollToChatRef.current) {
+        scrollChatSectionIntoView("smooth");
+      }
+
+      scrollChatEndIntoView(behavior);
+      shouldScrollToChatRef.current = false;
+    });
+  }, [
+    chatBusy,
+    displayedMessages.length,
+    latestResult,
+    latestSnapshotVersion,
+    scrollChatEndIntoView,
+    scrollChatSectionIntoView,
+  ]);
 
   const applyWorkspaceBootstrap = useCallback((next: WorkspaceBootstrap) => {
     setConversations(next.conversations);
@@ -682,6 +720,7 @@ export function PersistentAnalysisWorkspace({
 
   const syncWorkspaceRef = useRef(syncWorkspace);
   const openFallbackWorkspaceRef = useRef(openFallbackWorkspace);
+  const resetWorkspaceToEmptyRef = useRef(resetWorkspaceToEmpty);
 
   useEffect(() => {
     syncWorkspaceRef.current = syncWorkspace;
@@ -690,6 +729,14 @@ export function PersistentAnalysisWorkspace({
   useEffect(() => {
     openFallbackWorkspaceRef.current = openFallbackWorkspace;
   }, [openFallbackWorkspace]);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    resetWorkspaceToEmptyRef.current = resetWorkspaceToEmpty;
+  }, [resetWorkspaceToEmpty]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -712,12 +759,12 @@ export function PersistentAnalysisWorkspace({
 
         setWorkspaceBusy(true);
 
-        if (currentUser === null) {
+        if (currentUserRef.current === null) {
           setWorkspaceBusy(false);
         }
 
         await syncWorkspaceRef.current(
-          supabase,
+          supabaseRef.current,
           preferredConversationIdRef.current,
         );
       } catch (workspaceError) {
@@ -727,7 +774,7 @@ export function PersistentAnalysisWorkspace({
 
         setResolvedCurrentUser(null);
         setShowWorkspaceFallback(true);
-        resetWorkspaceToEmpty();
+        resetWorkspaceToEmptyRef.current();
         setError(
           workspaceError instanceof Error
             ? workspaceError.message
@@ -766,7 +813,7 @@ export function PersistentAnalysisWorkspace({
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, supabase]);
 
   useEffect(() => {
     if (!hasInitializedWorkspaceRef.current) {
@@ -966,11 +1013,14 @@ export function PersistentAnalysisWorkspace({
 
   async function handleIntakeSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    shouldScrollToChatRef.current = true;
+    scrollChatSectionIntoView("smooth");
     await streamChatTurn(summarizeSubmission(form));
   }
 
   async function handleComposerSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    shouldScrollToChatRef.current = true;
     await streamChatTurn(composer);
   }
 
@@ -1103,9 +1153,9 @@ export function PersistentAnalysisWorkspace({
       }
       onLogout={resolvedCurrentUser ? () => void handleLogout() : undefined}
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(350px,470px)_minmax(0,1fr)]">
+      <div className="space-y-6 pb-28">
         {showWorkspaceFallback && !resolvedCurrentUser ? (
-          <div className="rounded-[1.25rem] border border-[#F1D3B5] bg-[#FFF4E8] px-5 py-4 text-sm leading-6 text-[var(--color-warning)] xl:col-span-2">
+          <div className={warningPanelClassName()}>
             De sessie of chatgeschiedenis kon niet tijdig geladen worden. De
             lege workspace staat alvast open; ververs of log opnieuw in als
             acties niet reageren.
@@ -1220,14 +1270,14 @@ export function PersistentAnalysisWorkspace({
             </div>
 
             {extractionError ? (
-              <div className="mt-4 rounded-[1rem] border border-[#E7C7C7] bg-[#FAEEEE] px-4 py-3 text-sm text-[var(--color-danger)]">
+              <div className={`mt-4 ${dangerPanelClassName()}`}>
                 {extractionError}
               </div>
             ) : null}
 
             {reviewPatch && reviewFields ? (
               <div className="mt-5 space-y-4">
-                <div className="rounded-[1rem] border border-[#F1D3B5] bg-[#FFF4E8] px-4 py-4 text-sm leading-6 text-[var(--color-warning)]">
+                <div className={warningPanelClassName()}>
                   Controleer de voorgestelde waarden en neem alleen over wat jij
                   wilt laten meewegen in de analyse.
                 </div>
@@ -1502,7 +1552,7 @@ export function PersistentAnalysisWorkspace({
             </label>
 
             {error ? (
-              <div className="rounded-[1rem] border border-[#E7C7C7] bg-[#FAEEEE] px-4 py-3 text-sm text-[var(--color-danger)]">
+              <div className={dangerPanelClassName()}>
                 {error}
               </div>
             ) : null}
@@ -1518,11 +1568,15 @@ export function PersistentAnalysisWorkspace({
                   ? "Werk deze chatanalyse bij"
                   : "Start analysechat"}
             </button>
+            <p className="text-xs leading-5 text-[var(--color-muted)]">
+              Na het starten springt de pagina automatisch naar de chat hieronder.
+              Aanpassingen doe je gewoon door terug naar boven te scrollen.
+            </p>
           </form>
         </section>
 
-        <section className={cardClassName()}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <section ref={chatSectionRef} className={cardClassName()}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
                 Chat
@@ -1530,9 +1584,10 @@ export function PersistentAnalysisWorkspace({
               <h2 className="mt-3 font-[family:var(--font-display)] text-3xl text-[var(--color-foreground)]">
                 {activeConversation?.summary.title ?? "Nieuwe analyse"}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-muted)]">
-                Elke herberekening blijft als snapshot bewaard binnen hetzelfde
-                gesprek, samen met de volledige conversatiehistoriek.
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-muted)]">
+                Intake bovenaan, gesprek hieronder. Elke berekening komt mee in
+                dezelfde stroom als een assistant-kaart, zodat cijfers en
+                context netjes samen blijven.
               </p>
             </div>
             <div className={mutedPillClassName()}>
@@ -1540,208 +1595,140 @@ export function PersistentAnalysisWorkspace({
             </div>
           </div>
 
-          {chatBusy ? (
-            <div className="mt-5">
-              <TypingIndicator label="Assistant denkt mee en herberekent waar nodig" />
-            </div>
-          ) : null}
+          <div className="mt-6 space-y-4">
+            {displayedMessages.length === 0 && !latestResult ? (
+              <div className="rounded-[1.5rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-alt)] px-6 py-10 text-center">
+                <p className="text-sm font-medium text-[var(--color-foreground)]">
+                  Vertel me over een pand
+                </p>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--color-muted)]">
+                  Vul bovenaan enkele kerngegevens in of upload screenshots. De
+                  tool toont meteen wat al berekend kan worden en opent daarna
+                  de analysechat.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setComposer("Vertel me eerlijk wat je van dit pand vindt.")
+                  }
+                  className="mt-5 rounded-[1rem] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)]"
+                >
+                  Voorbeeldvraag klaarzetten
+                </button>
+              </div>
+            ) : null}
 
-          {latestResult ? (
-            <div className="mt-6">
-              <AnalysisResultsCard
-                result={latestResult}
-                form={form}
-                enrichmentContext={currentEnrichmentContext}
-              />
-            </div>
-          ) : (
-            <div className="mt-6 rounded-[1.5rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-alt)] px-6 py-10 text-center">
-              <p className="text-sm font-medium text-[var(--color-foreground)]">
-                Vertel me over een pand
-              </p>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--color-muted)]">
-                Vul links enkele kerngegevens in of upload screenshots van een
-                advertentie. De tool berekent wat al mogelijk is en opent daarna
-                het gesprek met een onderbouwde eerste mening.
-              </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setComposer("Vertel me eerlijk wat je van dit pand vindt.")
-                }
-                className="mt-5 rounded-[1rem] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)]"
-              >
-                Voorbeeldvraag klaarzetten
-              </button>
-            </div>
-          )}
+            {displayedMessages.map((message) => {
+              const isAssistant = message.role === "assistant";
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-            <div className="space-y-4">
-              <div className="subtle-scrollbar max-h-[560px] space-y-4 overflow-y-auto pr-1">
-                {displayedMessages.length > 0 ? (
-                  displayedMessages.map((message) => {
-                    const isAssistant = message.role === "assistant";
-
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
+                >
+                  <article
+                    className={`w-full max-w-[min(100%,58rem)] rounded-[1.45rem] px-5 py-4 ${
+                      isAssistant
+                        ? "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)]"
+                        : "bg-[var(--color-primary)] text-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <p
+                        className={`text-[0.68rem] font-semibold uppercase tracking-[0.16em] ${
+                          isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
+                        }`}
                       >
-                        <article
-                          className={`max-w-[92%] rounded-[1.4rem] px-5 py-4 ${
-                            isAssistant
-                              ? "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)]"
-                              : "bg-[var(--color-primary)] text-white"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <p
-                              className={`text-[0.68rem] font-semibold uppercase tracking-[0.16em] ${
-                                isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
-                              }`}
-                            >
-                              {isAssistant ? "Assistant" : "Gebruiker"}
-                            </p>
-                            <p
-                              className={`text-xs ${
-                                isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
-                              }`}
-                            >
-                              {message.pending
-                                ? "nu bezig..."
-                                : formatDateTime(message.createdAt)}
-                            </p>
-                          </div>
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-7">
-                            {message.content}
-                          </p>
-                          {message.pending && isAssistant ? (
-                            <div className="mt-3">
-                              <TypingIndicator label="Antwoord stroomt binnen" />
-                            </div>
-                          ) : null}
-                        </article>
+                        {isAssistant ? "Assistant" : "Gebruiker"}
+                      </p>
+                      <p
+                        className={`text-xs ${
+                          isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
+                        }`}
+                      >
+                        {message.pending
+                          ? "nu bezig..."
+                          : formatDateTime(message.createdAt)}
+                      </p>
+                    </div>
+
+                    <ChatMarkdown
+                      className="mt-3"
+                      content={message.content}
+                    />
+
+                    {message.pending && isAssistant ? (
+                      <div className="mt-3">
+                        <TypingIndicator label="Antwoord stroomt binnen" />
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="rounded-[1.4rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-5 py-6 text-center">
-                    <p className="text-sm font-medium text-[var(--color-foreground)]">
-                      Nieuwe chat
+                    ) : null}
+                  </article>
+                </div>
+              );
+            })}
+
+            {latestResult ? (
+              <div className="flex justify-start">
+                <article className="w-full max-w-[min(100%,64rem)] rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4 md:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                      Assistant snapshotanalyse
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                      Deze analyse heeft nog geen berichten. Verstuur links je
-                      eerste intake en de assistant opent het gesprek vanzelf.
+                    <p className="text-xs text-[var(--color-muted)]">
+                      {activeConversation?.latestSnapshot
+                        ? formatDateTime(activeConversation.latestSnapshot.createdAt)
+                        : "Laatste berekening"}
                     </p>
                   </div>
-                )}
+
+                  <div className="mt-4">
+                    <AnalysisResultsCard
+                      result={latestResult}
+                      form={form}
+                      enrichmentContext={currentEnrichmentContext}
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <IssueList
+                      issues={latestResult.issues ?? []}
+                      emptyMessage="Geen openstaande issues in deze berekening."
+                    />
+                  </div>
+                </article>
               </div>
+            ) : null}
 
-              <form
-                className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4"
-                onSubmit={handleComposerSubmit}
-              >
-                <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
-                  <span>Vervolgvraag of wijziging</span>
-                  <textarea
-                    className={`${inputClassName()} min-h-28 resize-y`}
-                    value={composer}
-                    onChange={(event) => setComposer(event.target.value)}
-                    placeholder="Bijvoorbeeld: herbereken met 1.150 euro huur en zeg me eerlijk of dit nog steek houdt."
-                  />
-                </label>
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs leading-5 text-[var(--color-muted)]">
-                    Maximaal een concrete vraag per beurt werkt hier het best.
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={workspaceBusy || chatBusy || !composer.trim()}
-                    className="rounded-[1rem] bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:opacity-60"
-                  >
-                    {chatBusy ? "Stream bezig..." : "Verstuur in chat"}
-                  </button>
-                </div>
-              </form>
-            </div>
+            <div ref={chatEndRef} />
+          </div>
 
-            <div className="space-y-4">
-              <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
-                  Actuele issues en aandachtspunten
-                </h3>
-                <div className="mt-4">
-                  <IssueList issues={latestResult?.issues ?? []} />
-                </div>
-              </section>
-
-              {latestResult ? (
-                <>
-                  <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                    <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
-                      Notariskosten aankoopakte
-                    </h3>
-                    <div className="mt-4 space-y-3">
-                      {latestResult.module1.notaryPurchaseAct.breakdown.map((item) => (
-                        <div
-                          key={item.label}
-                          className="flex items-center justify-between gap-4 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm"
-                        >
-                          <div>
-                            <p className="font-medium text-[var(--color-foreground)]">
-                              {item.label}
-                            </p>
-                            <p className="text-xs text-[var(--color-muted)]">
-                              {item.kind === "estimate" ? "Raming" : "Exact"}
-                            </p>
-                          </div>
-                          <p className="font-semibold text-[var(--color-foreground)]">
-                            {formatCurrency(item.amount)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-                    <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
-                      Dossierdetails
-                    </h3>
-                    <div className="mt-4 grid gap-3">
-                      <MetricBadge
-                        label="Jaarlijkse nettohuur"
-                        value={formatCurrency(latestResult.module3.jaarlijkseNettoHuur)}
-                      />
-                      <MetricBadge
-                        label="Cash-on-cash"
-                        value={formatPercentPoints(latestResult.module3.cashOnCash)}
-                      />
-                      <MetricBadge
-                        label="Totale interest"
-                        value={formatCurrency(latestResult.module4.totaleInterest)}
-                      />
-                      {latestResult.module5 ? (
-                        <MetricBadge
-                          label="REV na hefboom"
-                          value={formatPercentPoints(
-                            latestResult.module5.rev !== undefined
-                              ? latestResult.module5.rev * 100
-                              : undefined,
-                          )}
-                        />
-                      ) : null}
-                      {parseOptionalNumber(form.eigenInbreng) !== undefined ? (
-                        <MetricBadge
-                          label="Eigen inbreng ingevoerd"
-                          value={formatCurrency(parseOptionalNumber(form.eigenInbreng))}
-                        />
-                      ) : null}
-                    </div>
-                  </section>
-                </>
-              ) : null}
-            </div>
+          <div className="sticky bottom-3 z-10 mt-8 -mx-5 px-5 pb-1 pt-3 md:-mx-6 md:px-6">
+            <form
+              className="rounded-[1.45rem] border border-[var(--color-border)] bg-[rgba(33,33,33,0.94)] p-4 shadow-[0_26px_48px_rgba(0,0,0,0.32)] backdrop-blur"
+              onSubmit={handleComposerSubmit}
+            >
+              <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
+                <span>Vervolgvraag of wijziging</span>
+                <textarea
+                  className={`${inputClassName()} min-h-28 resize-y`}
+                  value={composer}
+                  onChange={(event) => setComposer(event.target.value)}
+                  placeholder="Bijvoorbeeld: herbereken met 1.150 euro huur en zeg me eerlijk of dit nog steek houdt."
+                />
+              </label>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs leading-5 text-[var(--color-muted)]">
+                  Maximaal een concrete vraag per beurt werkt hier het best.
+                </p>
+                <button
+                  type="submit"
+                  disabled={workspaceBusy || chatBusy || !composer.trim()}
+                  className="rounded-[1rem] bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:opacity-60"
+                >
+                  {chatBusy ? "Stream bezig..." : "Verstuur in chat"}
+                </button>
+              </div>
+            </form>
           </div>
         </section>
       </div>
