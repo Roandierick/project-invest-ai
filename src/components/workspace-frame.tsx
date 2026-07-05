@@ -18,6 +18,7 @@ interface WorkspaceFrameProps {
   topbar?: React.ReactNode;
   onNewConversation?: () => void | Promise<void>;
   onSelectConversation?: (conversationId: string) => void | Promise<void>;
+  onDeleteConversation?: (conversationId: string) => void | Promise<void>;
   onLogout?: () => void | Promise<void>;
   children: React.ReactNode;
 }
@@ -39,6 +40,7 @@ export function WorkspaceFrame({
   topbar,
   onNewConversation,
   onSelectConversation,
+  onDeleteConversation,
   onLogout,
   children,
 }: WorkspaceFrameProps) {
@@ -59,6 +61,7 @@ export function WorkspaceFrame({
               onNavigate={() => setSidebarOpen(false)}
               onNewConversation={onNewConversation}
               onSelectConversation={onSelectConversation}
+              onDeleteConversation={onDeleteConversation}
               onLogout={onLogout}
               className="h-full"
             />
@@ -123,6 +126,7 @@ export function WorkspaceFrame({
               onNavigate={() => setSidebarOpen(false)}
               onNewConversation={onNewConversation}
               onSelectConversation={onSelectConversation}
+              onDeleteConversation={onDeleteConversation}
               onLogout={onLogout}
               className="h-full shadow-[0_24px_54px_rgba(0,0,0,0.38)]"
             />

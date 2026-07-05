@@ -16,6 +16,7 @@ import {
 import type { AnalysisFormState, BooleanChoice } from "@/lib/analysis/types";
 import {
   createConversation,
+  deleteConversation,
   loadWorkspaceBootstrap,
   type ConversationDetails,
   type ConversationSummary,
@@ -691,12 +692,27 @@ export function PersistentAnalysisWorkspace({
     setForm(next.activeConversation?.currentForm ?? emptyForm());
   }, []);
 
-  const resetWorkspaceToEmpty = useCallback(() => {
-    setConversations(EMPTY_WORKSPACE_BOOTSTRAP.conversations);
+  const clearTransientWorkspaceState = useCallback(() => {
+    setComposer("");
+    setStreamingTurn(null);
+    setExtractionError(null);
+    setReviewPatch(null);
+    setReviewFields(null);
+    setReviewConflicts([]);
+    replaceSelectedFiles([]);
+  }, [replaceSelectedFiles]);
+
+  const clearActiveConversationState = useCallback(() => {
     setActiveConversationId("");
     setActiveConversation(null);
     setForm(emptyForm());
-  }, []);
+    clearTransientWorkspaceState();
+  }, [clearTransientWorkspaceState]);
+
+  const resetWorkspaceToEmpty = useCallback(() => {
+    setConversations(EMPTY_WORKSPACE_BOOTSTRAP.conversations);
+    clearActiveConversationState();
+  }, [clearActiveConversationState]);
 
   const openFallbackWorkspace = useCallback((message: string) => {
     setShowWorkspaceFallback(true);
@@ -901,6 +917,27 @@ export function PersistentAnalysisWorkspace({
     }));
   }
 
+  function removeSelectedFile(indexToRemove: number) {
+    const previewToRemove = selectedFilePreviews[indexToRemove];
+
+    if (previewToRemove) {
+      URL.revokeObjectURL(previewToRemove.url);
+    }
+
+    const remainingFiles = selectedFiles.filter(
+      (_, index) => index !== indexToRemove,
+    );
+
+    replaceSelectedFiles(remainingFiles);
+
+    if (remainingFiles.length === 0) {
+      setExtractionError(null);
+      setReviewPatch(null);
+      setReviewFields(null);
+      setReviewConflicts([]);
+    }
+  }
+
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
@@ -928,12 +965,7 @@ export function PersistentAnalysisWorkspace({
         supabase,
         resolvedCurrentUser.id,
       );
-      setComposer("");
-      setStreamingTurn(null);
-      setReviewPatch(null);
-      setReviewFields(null);
-      setReviewConflicts([]);
-      replaceSelectedFiles([]);
+      clearTransientWorkspaceState();
       await refreshWorkspace(createdConversation.id);
     } catch (creationError) {
       setError(
@@ -951,12 +983,7 @@ export function PersistentAnalysisWorkspace({
     setError(null);
 
     try {
-      setComposer("");
-      setStreamingTurn(null);
-      setReviewPatch(null);
-      setReviewFields(null);
-      setReviewConflicts([]);
-      replaceSelectedFiles([]);
+      clearTransientWorkspaceState();
       await refreshWorkspace(conversationId);
     } catch (loadError) {
       setError(
@@ -964,6 +991,29 @@ export function PersistentAnalysisWorkspace({
       );
     } finally {
       setWorkspaceBusy(false);
+    }
+  }
+
+  async function handleDeleteConversation(conversationId: string) {
+    setError(null);
+
+    try {
+      await deleteConversation(supabase, conversationId);
+
+      setConversations((current) =>
+        current.filter((conversation) => conversation.id !== conversationId),
+      );
+
+      if (activeConversationId === conversationId) {
+        clearActiveConversationState();
+      }
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Chat verwijderen is mislukt.",
+      );
+      throw deleteError;
     }
   }
 
@@ -1182,6 +1232,11 @@ export function PersistentAnalysisWorkspace({
           ? (conversationId) => void handleSelectConversation(conversationId)
           : undefined
       }
+      onDeleteConversation={
+        resolvedCurrentUser
+          ? (conversationId) => handleDeleteConversation(conversationId)
+          : undefined
+      }
       onLogout={resolvedCurrentUser ? () => void handleLogout() : undefined}
     >
       <div className="space-y-6 pb-28">
@@ -1267,11 +1322,30 @@ export function PersistentAnalysisWorkspace({
 
             {selectedFilePreviews.length > 0 ? (
               <div className="mt-4 grid grid-cols-3 gap-3">
-                {selectedFilePreviews.map((preview) => (
+                {selectedFilePreviews.map((preview, index) => (
                   <div
                     key={preview.url}
-                    className="overflow-hidden rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)]"
+                    className="relative overflow-hidden rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)]"
                   >
+                    <button
+                      type="button"
+                      aria-label={`Verwijder ${preview.name}`}
+                      onClick={() => removeSelectedFile(index)}
+                      className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-[rgba(0,0,0,0.55)] text-white/88 transition hover:border-[rgba(239,154,154,0.45)] hover:text-[var(--color-danger)]"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      >
+                        <path d="M6 6l12 12" />
+                        <path d="M18 6L6 18" />
+                      </svg>
+                    </button>
                     {/* eslint-disable-next-line @next/next/no-img-element -- Object URLs from local File previews are not supported through static image optimization. */}
                     <img
                       src={preview.url}

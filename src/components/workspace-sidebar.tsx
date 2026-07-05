@@ -7,6 +7,7 @@ import { useState } from "react";
 import { InstallAppButton } from "@/components/install-app-button";
 import {
   createConversation,
+  deleteConversation,
   type ConversationSummary,
 } from "@/lib/conversations/repository";
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +29,7 @@ interface WorkspaceSidebarProps {
   onNavigate?: () => void;
   onNewConversation?: () => void | Promise<void>;
   onSelectConversation?: (conversationId: string) => void | Promise<void>;
+  onDeleteConversation?: (conversationId: string) => void | Promise<void>;
   onLogout?: () => void | Promise<void>;
 }
 
@@ -154,15 +156,22 @@ export function WorkspaceSidebar({
   onNavigate,
   onNewConversation,
   onSelectConversation,
+  onDeleteConversation,
   onLogout,
 }: WorkspaceSidebarProps) {
   const router = useRouter();
   const [localBusy, setLocalBusy] = useState(false);
-  const disabled = busy || localBusy;
+  const [pendingDeleteConversationId, setPendingDeleteConversationId] =
+    useState<string | null>(null);
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(
+    null,
+  );
+  const disabled = busy || localBusy || deletingConversationId !== null;
   const isAuthenticated = Boolean(currentUserId);
 
   async function handleNewConversation() {
     onNavigate?.();
+    setPendingDeleteConversationId(null);
 
     if (onNewConversation) {
       await onNewConversation();
@@ -190,6 +199,7 @@ export function WorkspaceSidebar({
 
   async function handleSelectConversation(conversationId: string) {
     onNavigate?.();
+    setPendingDeleteConversationId(null);
 
     if (onSelectConversation) {
       await onSelectConversation(conversationId);
@@ -201,6 +211,7 @@ export function WorkspaceSidebar({
 
   async function handleLogout() {
     onNavigate?.();
+    setPendingDeleteConversationId(null);
 
     if (!isAuthenticated) {
       router.push("/login");
@@ -221,6 +232,26 @@ export function WorkspaceSidebar({
       router.refresh();
     } finally {
       setLocalBusy(false);
+    }
+  }
+
+  async function handleDeleteConversation(conversationId: string) {
+    setDeletingConversationId(conversationId);
+
+    try {
+      if (onDeleteConversation) {
+        await onDeleteConversation(conversationId);
+      } else {
+        const supabase = createClient();
+        await deleteConversation(supabase, conversationId);
+        router.refresh();
+      }
+
+      setPendingDeleteConversationId(null);
+    } catch {
+      // De parent toont de foutmelding al in de workspace.
+    } finally {
+      setDeletingConversationId(null);
     }
   }
 
@@ -319,26 +350,95 @@ export function WorkspaceSidebar({
               const isActive =
                 activeNav === "analyse" &&
                 conversation.id === activeConversationId;
+              const deletePending =
+                pendingDeleteConversationId === conversation.id;
+              const deletingThisConversation =
+                deletingConversationId === conversation.id;
 
               return (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => void handleSelectConversation(conversation.id)}
-                  disabled={disabled}
-                  className={`w-full rounded-[1.1rem] border px-4 py-3 text-left transition ${
-                    isActive
-                      ? "border-[rgba(27,58,92,0.72)] bg-[rgba(27,58,92,0.22)]"
-                      : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <p className="truncate text-sm font-medium text-white">
-                    {conversation.title}
-                  </p>
-                  <p className="mt-2 text-xs text-white/44">
-                    {formatDateTime(conversation.updatedAt)}
-                  </p>
-                </button>
+                <div key={conversation.id} className="group space-y-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => void handleSelectConversation(conversation.id)}
+                      disabled={disabled}
+                      className={`w-full rounded-[1.1rem] border px-4 py-3 pr-11 text-left transition ${
+                        isActive
+                          ? "border-[rgba(27,58,92,0.72)] bg-[rgba(27,58,92,0.22)]"
+                          : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]"
+                      }`}
+                    >
+                      <p className="truncate text-sm font-medium text-white">
+                        {conversation.title}
+                      </p>
+                      <p className="mt-2 text-xs text-white/44">
+                        {formatDateTime(conversation.updatedAt)}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-label={`Verwijder ${conversation.title}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setPendingDeleteConversationId((current) =>
+                          current === conversation.id ? null : conversation.id,
+                        );
+                      }}
+                      disabled={disabled}
+                      className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(0,0,0,0.28)] text-white/72 transition ${
+                        deletePending
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100"
+                      } hover:border-[rgba(239,154,154,0.45)] hover:text-[var(--color-danger)] disabled:opacity-40`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 7h16" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M6 7l1 12h10l1-12" />
+                        <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {deletePending ? (
+                    <div className="rounded-[1rem] border border-[rgba(239,154,154,0.22)] bg-[rgba(153,27,27,0.16)] px-3 py-3 text-sm">
+                      <p className="text-white">
+                        Chat verwijderen? Dit kan niet ongedaan worden.
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteConversation(conversation.id)}
+                          disabled={disabled}
+                          className="rounded-[0.85rem] bg-[var(--color-danger)] px-3 py-2 text-xs font-semibold text-[#1a1a1a] disabled:opacity-60"
+                        >
+                          {deletingThisConversation
+                            ? "Verwijderen..."
+                            : "Verwijderen"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteConversationId(null)}
+                          disabled={disabled}
+                          className="rounded-[0.85rem] border border-white/10 px-3 py-2 text-xs font-semibold text-white/82 disabled:opacity-60"
+                        >
+                          Annuleren
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               );
             })
           )}

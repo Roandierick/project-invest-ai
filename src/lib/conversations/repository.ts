@@ -284,6 +284,20 @@ export async function createConversation(
   return mapConversation(data);
 }
 
+export async function deleteConversation(
+  client: DatabaseClient,
+  conversationId: string,
+): Promise<void> {
+  const { error } = await client
+    .from("conversations")
+    .delete()
+    .eq("id", conversationId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function getConversationDetails(
   client: DatabaseClient,
   conversationId: string,
