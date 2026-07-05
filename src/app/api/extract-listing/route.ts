@@ -7,7 +7,6 @@ import {
   attachUploadsToSnapshot,
   ensureConversationSnapshot,
 } from "@/lib/conversations/repository";
-import { hasAnthropicApiKey } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { extractListingFromImage } from "@/lib/vision/anthropic";
 import { mergeImageExtractions } from "@/lib/vision/merge";
@@ -16,7 +15,7 @@ import {
   VISION_EXTRACT_RATE_LIMIT_MAX,
 } from "@/lib/vision/rate-limit";
 
-const MAX_FILES = 5;
+const MAX_FILES = 20;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const UploadMetadataSchema = z.object({
@@ -93,8 +92,36 @@ function formatResetMoment(resetAt: string): string {
   });
 }
 
+function normalizeThrownMessage(error: unknown): string {
+  if (error instanceof z.ZodError) {
+    return error.issues
+      .map((issue) => `${issue.path.join(".") || "formData"}: ${issue.message}`)
+      .join(" | ");
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "Foto-extractie is onverwacht mislukt.";
+}
+
 export async function POST(request: Request) {
   try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            "ANTHROPIC_API_KEY ontbreekt op de server. Foto-extractie is tijdelijk niet beschikbaar.",
+        },
+        { status: 503 },
+      );
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -107,27 +134,45 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!hasAnthropicApiKey()) {
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (!contentType.toLowerCase().includes("multipart/form-data")) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY is not configured." },
-        { status: 503 },
+        {
+          error:
+            "De uploadroute verwacht multipart/form-data met een of meer files-velden.",
+        },
+        { status: 400 },
       );
     }
 
     const formData = await request.formData();
+    const formDataKeys = Array.from(formData.keys());
     const metadata = UploadMetadataSchema.parse({
       conversationId: normalizeOptionalString(formData.get("conversationId")),
       snapshotId: normalizeOptionalString(formData.get("snapshotId")),
       form: normalizeOptionalString(formData.get("form")),
     });
     const currentForm = parseOptionalFormPayload(metadata.form);
-    const files = formData
-      .getAll("files")
+    const rawFiles = formData.getAll("files");
+    const files = rawFiles
       .filter((value): value is File => value instanceof File);
+
+    if (rawFiles.length === 0) {
+      return NextResponse.json(
+        {
+          error: `Geen bestanden ontvangen in FormData onder "files". Ontvangen velden: ${formDataKeys.join(", ") || "geen"}.`,
+        },
+        { status: 400 },
+      );
+    }
 
     if (files.length === 0) {
       return NextResponse.json(
-        { error: "Upload minstens een afbeelding." },
+        {
+          error:
+            'Het "files"-veld werd ontvangen, maar bevatte geen geldige File-objecten.',
+        },
         { status: 400 },
       );
     }
@@ -252,21 +297,17 @@ export async function POST(request: Request) {
       createdSnapshot,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ongeldige uploadmetadata.", details: error.flatten() },
-        { status: 400 },
-      );
-    }
+    const normalizedMessage = normalizeThrownMessage(error);
+
+    console.error("[extract-listing] Foto-extractie mislukt", {
+      error,
+      message: normalizedMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Foto-extractie is onverwacht mislukt.",
-      },
-      { status: 500 },
+      { error: normalizedMessage },
+      { status: error instanceof z.ZodError ? 400 : 500 },
     );
   }
 }

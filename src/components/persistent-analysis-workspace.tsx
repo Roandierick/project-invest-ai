@@ -623,9 +623,42 @@ export function PersistentAnalysisWorkspace({
     [selectedFilePreviews],
   );
 
+  const replaceSelectedFiles = useCallback((nextFiles: File[]) => {
+    setSelectedFiles(nextFiles);
+    setSelectedFilePreviews(
+      nextFiles.map((file) => ({
+        name: file.name,
+        url: URL.createObjectURL(file),
+      })),
+    );
+  }, []);
+
   useEffect(() => {
     preferredConversationIdRef.current = preferredConversationId;
   }, [preferredConversationId]);
+
+  useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      const items = Array.from(event.clipboardData?.items ?? []);
+      const imageItems = items.filter((item) => item.type.startsWith("image/"));
+
+      if (imageItems.length === 0) {
+        return;
+      }
+
+      const newFiles = imageItems
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null);
+
+      if (newFiles.length > 0) {
+        replaceSelectedFiles([...selectedFiles, ...newFiles]);
+      }
+    }
+
+    window.addEventListener("paste", handlePaste);
+
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [replaceSelectedFiles, selectedFiles]);
 
   useEffect(() => {
     if (displayedMessages.length === 0 && !latestResult && !chatBusy) {
@@ -866,16 +899,6 @@ export function PersistentAnalysisWorkspace({
       ...current,
       [key]: value,
     }));
-  }
-
-  function replaceSelectedFiles(nextFiles: File[]) {
-    setSelectedFiles(nextFiles);
-    setSelectedFilePreviews(
-      nextFiles.map((file) => ({
-        name: file.name,
-        url: URL.createObjectURL(file),
-      })),
-    );
   }
 
   async function handleLogout() {
@@ -1262,6 +1285,14 @@ export function PersistentAnalysisWorkspace({
                 ))}
               </div>
             ) : null}
+
+            <div className="mt-4 rounded-[1rem] border border-dashed border-[var(--color-border)] bg-[rgba(27,58,92,0.08)] px-4 py-3 text-sm text-[var(--color-foreground)]">
+              <p className="font-medium">Of plak een screenshot met Ctrl+V</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">
+                Afbeeldingen uit je klembord worden automatisch toegevoegd aan
+                de huidige selectie.
+              </p>
+            </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
