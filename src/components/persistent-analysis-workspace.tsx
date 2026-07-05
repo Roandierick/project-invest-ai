@@ -285,6 +285,10 @@ function mutedPillClassName() {
   return "rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-muted)]";
 }
 
+function fieldId(key: keyof AnalysisFormState) {
+  return `field-${key}`;
+}
+
 function warningPanelClassName() {
   return "rounded-[1rem] border border-[rgba(229,173,114,0.38)] bg-[rgba(180,83,9,0.18)] px-4 py-3 text-sm leading-6 text-[var(--color-warning)]";
 }
@@ -327,13 +331,17 @@ function renderTextField(
   ) => void,
   config: FieldConfig,
 ) {
+  const inputId = fieldId(config.key);
+
   return (
     <label
       key={config.key}
+      htmlFor={inputId}
       className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
     >
       <span>{config.label}</span>
       <input
+        id={inputId}
         type={config.type ?? "text"}
         className={inputClassName()}
         inputMode={config.inputMode}
@@ -1349,9 +1357,13 @@ export function PersistentAnalysisWorkspace({
                 description="Basisgegevens voor aankoopkost, OV en rendement."
               >
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
+                  <label
+                    htmlFor={fieldId("gewest")}
+                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
+                  >
                     <span>Gewest</span>
                     <select
+                      id={fieldId("gewest")}
                       className={selectClassName()}
                       value={form.gewest}
                       onChange={(event) =>
@@ -1368,9 +1380,13 @@ export function PersistentAnalysisWorkspace({
                     </select>
                   </label>
 
-                  <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
+                  <label
+                    htmlFor={fieldId("aankoopSituatie")}
+                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
+                  >
                     <span>Aankoopsituatie</span>
                     <select
+                      id={fieldId("aankoopSituatie")}
                       className={selectClassName()}
                       value={form.aankoopSituatie}
                       onChange={(event) =>
@@ -1425,9 +1441,13 @@ export function PersistentAnalysisWorkspace({
                     renderTextField(form, updateForm, config),
                   )}
 
-                  <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
+                  <label
+                    htmlFor={fieldId("leningType")}
+                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
+                  >
                     <span>Leningtype</span>
                     <select
+                      id={fieldId("leningType")}
                       className={selectClassName()}
                       value={form.leningType}
                       onChange={(event) =>
@@ -1541,9 +1561,13 @@ export function PersistentAnalysisWorkspace({
               </FormSection>
             </div>
 
-            <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
+            <label
+              htmlFor={fieldId("notes")}
+              className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
+            >
               <span>Notities of context</span>
               <textarea
+                id={fieldId("notes")}
                 className={`${inputClassName()} min-h-28 resize-y`}
                 value={form.notes}
                 onChange={(event) => updateForm("notes", event.target.value)}
