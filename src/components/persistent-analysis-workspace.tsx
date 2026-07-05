@@ -938,6 +938,22 @@ export function PersistentAnalysisWorkspace({
     }
   }
 
+  function handleTextareaPaste(
+    event: React.ClipboardEvent<HTMLTextAreaElement>,
+  ) {
+    event.preventDefault();
+
+    const items = Array.from(event.clipboardData?.items ?? []);
+    const imageItems = items.filter((item) => item.type.startsWith("image/"));
+    const newFiles = imageItems
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (newFiles.length > 0) {
+      replaceSelectedFiles([...selectedFiles, ...newFiles]);
+    }
+  }
+
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
@@ -1360,13 +1376,13 @@ export function PersistentAnalysisWorkspace({
               </div>
             ) : null}
 
-            <div className="mt-4 rounded-[1rem] border border-dashed border-[var(--color-border)] bg-[rgba(27,58,92,0.08)] px-4 py-3 text-sm text-[var(--color-foreground)]">
-              <p className="font-medium">Of plak een screenshot met Ctrl+V</p>
-              <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">
-                Afbeeldingen uit je klembord worden automatisch toegevoegd aan
-                de huidige selectie.
-              </p>
-            </div>
+            <textarea
+              readOnly
+              value=""
+              onPaste={handleTextareaPaste}
+              placeholder="Plak hier je afbeeldingen"
+              className={`${inputClassName()} mt-4 min-h-24 cursor-default resize-none border-dashed bg-[rgba(27,58,92,0.08)] text-sm placeholder:text-[var(--color-muted)]`}
+            />
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
