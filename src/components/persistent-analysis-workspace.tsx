@@ -92,6 +92,21 @@ const REVIEW_FIELDS: Array<{
   },
 ];
 
+const AUTO_EXTRACT_SUMMARY_FIELDS: Array<{
+  key: keyof AnalysisFormState;
+  label: string;
+}> = [
+  { key: "aankoopprijs", label: "aankoopprijs" },
+  { key: "gemeente", label: "gemeente" },
+  { key: "postcode", label: "postcode" },
+  { key: "pandtype", label: "pandtype" },
+  { key: "oppervlakte", label: "oppervlakte" },
+  { key: "bouwjaar", label: "bouwjaar" },
+  { key: "nietGeindexeerdKi", label: "niet-geindexeerd KI" },
+  { key: "epcLabel", label: "EPC-label" },
+  { key: "aantalSlaapkamers", label: "aantal slaapkamers" },
+];
+
 const PROPERTY_FIELDS: FieldConfig[] = [
   {
     key: "aankoopprijs",
@@ -328,6 +343,20 @@ function hasSuggestedReviewValues(patch: Partial<AnalysisFormState>): boolean {
   );
 }
 
+function describeAutoExtractedValues(
+  patch: Partial<AnalysisFormState>,
+): string {
+  return AUTO_EXTRACT_SUMMARY_FIELDS.flatMap(({ key, label }) => {
+    const value = patch[key];
+
+    if (typeof value !== "string" || value.trim().length === 0) {
+      return [];
+    }
+
+    return [`${label}: ${value.trim()}`];
+  }).join(", ");
+}
+
 function renderTextField(
   form: AnalysisFormState,
   updateForm: <K extends keyof AnalysisFormState>(
@@ -536,6 +565,9 @@ export function PersistentAnalysisWorkspace({
     Array<{ name: string; url: string }>
   >([]);
   const [extracting, setExtracting] = useState(false);
+  const [extractionStatusLabel, setExtractionStatusLabel] = useState(
+    "Foto's worden uitgelezen...",
+  );
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [reviewPatch, setReviewPatch] = useState<Partial<AnalysisFormState> | null>(
     null,
@@ -960,6 +992,12 @@ export function PersistentAnalysisWorkspace({
     }
   }
 
+  function clearExtractionReviewState() {
+    setReviewPatch(null);
+    setReviewFields(null);
+    setReviewConflicts([]);
+  }
+
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
@@ -1039,7 +1077,13 @@ export function PersistentAnalysisWorkspace({
     }
   }
 
-  async function streamChatTurn(userMessage: string) {
+  async function streamChatTurn(
+    userMessage: string,
+    options?: {
+      conversationIdOverride?: string;
+      formOverride?: AnalysisFormState;
+    },
+  ) {
     const trimmedMessage = userMessage.trim();
 
     if (!trimmedMessage) {
@@ -1050,7 +1094,9 @@ export function PersistentAnalysisWorkspace({
     setError(null);
 
     try {
-      const conversationId = await ensureConversation();
+      const conversationId =
+        options?.conversationIdOverride ?? (await ensureConversation());
+      const formForRequest = options?.formOverride ?? form;
       setActiveConversationId(conversationId);
       setStreamingTurn({
         userMessage: trimmedMessage,
@@ -1065,7 +1111,7 @@ export function PersistentAnalysisWorkspace({
         body: JSON.stringify({
           conversationId,
           userMessage: trimmedMessage,
-          form,
+          form: formForRequest,
         }),
       });
 
@@ -1114,27 +1160,36 @@ export function PersistentAnalysisWorkspace({
     }
   }
 
-  async function handleIntakeSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    shouldScrollToChatRef.current = true;
-    scrollChatSectionIntoView("smooth");
-    await streamChatTurn(summarizeSubmission(form));
-  }
-
   async function handleComposerSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     shouldScrollToChatRef.current = true;
     await streamChatTurn(composer);
   }
 
-  async function handleExtractPhotos() {
+  async function requestPhotoExtraction(options?: {
+    mode?: "review" | "automatic";
+    baseForm?: AnalysisFormState;
+  }) {
+    const mode = options?.mode ?? "review";
+    const baseForm = options?.baseForm ?? form;
+
     if (selectedFiles.length === 0) {
-      setExtractionError("Selecteer eerst minstens een afbeelding.");
-      return;
+      if (mode === "review") {
+        setExtractionError("Selecteer eerst minstens een afbeelding.");
+      }
+      return null;
     }
 
     setExtracting(true);
     setExtractionError(null);
+    if (mode === "automatic") {
+      clearExtractionReviewState();
+    }
+    setExtractionStatusLabel(
+      mode === "automatic"
+        ? "Foto's worden uitgelezen voor de analyse..."
+        : "Foto's worden uitgelezen...",
+    );
 
     try {
       const conversationId = await ensureConversation();
@@ -1143,7 +1198,7 @@ export function PersistentAnalysisWorkspace({
 
       selectedFiles.forEach((file) => formData.append("files", file));
       formData.append("conversationId", conversationId);
-      formData.append("form", JSON.stringify(form));
+      formData.append("form", JSON.stringify(baseForm));
 
       if (snapshotId) {
         formData.append("snapshotId", snapshotId);
@@ -1169,28 +1224,106 @@ export function PersistentAnalysisWorkspace({
         await refreshWorkspace(conversationId);
       }
 
-      if (!hasSuggestedReviewValues(data.merged.suggestedFormPatch)) {
-        setReviewPatch(null);
-        setReviewFields(null);
-        setReviewConflicts([]);
-        setExtractionError(
-          "We konden geen gegevens uitlezen uit deze foto's. Probeer een duidelijkere screenshot of vul de gegevens handmatig in.",
-        );
-        return;
+      const suggestedPatch = data.merged.suggestedFormPatch;
+      const hasSuggestedValues = hasSuggestedReviewValues(suggestedPatch);
+
+      if (mode === "review") {
+        if (!hasSuggestedValues) {
+          clearExtractionReviewState();
+          setExtractionError(
+            "We konden geen gegevens uitlezen uit deze foto's. Probeer een duidelijkere screenshot of vul de gegevens handmatig in.",
+          );
+          return {
+            conversationId,
+            hasSuggestedValues,
+            suggestedPatch,
+          };
+        }
+
+        setReviewPatch(suggestedPatch);
+        setReviewFields(data.merged.fields);
+        setReviewConflicts(data.merged.conflicts);
+      } else {
+        clearExtractionReviewState();
       }
 
-      setReviewPatch(data.merged.suggestedFormPatch);
-      setReviewFields(data.merged.fields);
-      setReviewConflicts(data.merged.conflicts);
+      return {
+        conversationId,
+        hasSuggestedValues,
+        suggestedPatch,
+      };
     } catch (loadError) {
-      setExtractionError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Foto-extractie is mislukt.",
-      );
+      if (mode === "review") {
+        setExtractionError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Foto-extractie is mislukt.",
+        );
+      } else {
+        console.error(
+          "Automatische foto-extractie vóór chatstart is mislukt.",
+          loadError,
+        );
+      }
+
+      return null;
     } finally {
       setExtracting(false);
+      setExtractionStatusLabel("Foto's worden uitgelezen...");
     }
+  }
+
+  async function handleIntakeSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    shouldScrollToChatRef.current = true;
+    scrollChatSectionIntoView("smooth");
+
+    let nextForm = form;
+    let conversationIdOverride: string | undefined;
+    let openingMessage = summarizeSubmission(form);
+
+    const hasPhotos = selectedFiles.length > 0;
+    const hasManualValues = Boolean(
+      form.aankoopprijs || form.gemeente || form.postcode,
+    );
+
+    if (hasPhotos && !hasManualValues) {
+      const extraction = await requestPhotoExtraction({
+        mode: "automatic",
+        baseForm: form,
+      });
+
+      if (extraction?.conversationId) {
+        conversationIdOverride = extraction.conversationId;
+      }
+
+      if (extraction?.hasSuggestedValues) {
+        nextForm = mergeFormPatch(form, extraction.suggestedPatch);
+        setForm(nextForm);
+
+        const extractedValues = describeAutoExtractedValues(
+          extraction.suggestedPatch,
+        );
+
+        openingMessage = `${summarizeSubmission(nextForm)}${
+          extractedValues
+            ? ` De huidige dossierwaarden zijn automatisch uit mijn screenshots gelezen: ${extractedValues}. Vermeld expliciet welke waarden je gebruikt en vraag me te bevestigen of te corrigeren als iets niet klopt.`
+            : ""
+        }`;
+      }
+    }
+
+    await streamChatTurn(openingMessage, {
+      conversationIdOverride,
+      formOverride: nextForm,
+    });
+  }
+
+  async function handleExtractPhotos() {
+    await requestPhotoExtraction({
+      mode: "review",
+      baseForm: form,
+    });
   }
 
   function updateReviewPatch<K extends keyof AnalysisFormState>(
@@ -1295,7 +1428,7 @@ export function PersistentAnalysisWorkspace({
                 <TypingIndicator
                   label={
                     extracting
-                      ? "Foto's worden uitgelezen"
+                      ? extractionStatusLabel
                       : "Analyse wordt herberekend"
                   }
                 />

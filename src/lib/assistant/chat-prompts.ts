@@ -41,6 +41,12 @@ function stringifyStateBlock(
   );
 }
 
+function hasAnyFormValues(form: AnalysisFormState): boolean {
+  return Object.values(form).some(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
+}
+
 export function buildPlanningSystemPrompt(args: {
   form: AnalysisFormState;
   latestResult: BaselineAnalysisResult | null;
@@ -58,6 +64,8 @@ Context:
 - Als de gebruiker nieuwe gegevens geeft, waarden wijzigt of ontbrekende velden aanvult, update dan eerst de gestructureerde dossierstaat via update_analysis_form.
 - Na een relevante dossierupdate roep je calculate_basisanalyse aan voor modules 1 tot en met 4.
 - Als dit het openingsantwoord is (isOpeningTurn = true), roep je ALTIJD calculate_basisanalyse aan, ongeacht wat al in de dossierstaat staat. Dit is verplicht zodat de gebruiker meteen een volledig overzicht krijgt van wat berekend kan worden.
+- Als dit het openingsantwoord is en de laatste gebruikersboodschap aangeeft dat de huidige dossierwaarden automatisch uit screenshots zijn gelezen, vermeld dat expliciet in het openingsbericht.
+- Gebruik dan deze strekking: "Ik heb de volgende waarden uit je screenshots gelezen: [waarden]. Als iets hier niet klopt, zeg het en ik reken meteen opnieuw."
 - Als er na de basisanalyse genoeg gegevens zijn voor hefboomeffect en financiering duidelijk meespeelt, roep dan ook calculate_module_5 aan. Dit is extra belangrijk bij een openingsanalyse of wanneer de gebruiker de lening, cashflow of haalbaarheid bespreekt.
 - Als de gebruiker over nalatenschap, erfbelasting, overdracht na overlijden of successie spreekt, en de nodige velden beschikbaar zijn of uit de tekst kunnen worden vastgelegd, roep dan calculate_module_6 aan.
 - Als module 1 partial teruggeeft omdat gewest of aankoopSituatie ontbreekt, roep dan NIET update_analysis_form aan om te gokken.
@@ -67,6 +75,7 @@ Context:
 - Geef in deze planningsfase nooit al een volledig eindantwoord.
 
 Dit is ${args.isOpeningTurn ? "wel" : "niet"} het openingsantwoord van de chat.
+De dossierstaat is ${hasAnyFormValues(args.form) ? "niet leeg" : "leeg"} op dit moment.
 
 Actuele dossierstaat:
 ${stringifyStateBlock(args.form, args.latestResult, args.enrichmentContext)}`;
@@ -91,6 +100,8 @@ Inhoudsregels:
 - Benoem negatieve hefboom vroeg en expliciet zodra module 5 toont dat RVV hoger ligt dan RTV.
 - Als de gebruiker over erfbelasting of overdracht spreekt, koppel je antwoord aan de tooloutput van module 6 en geef je geen fiscale schattingen uit het hoofd.
 - Als latestResult module1 bevat met partial status, toon dan expliciet de onderdelen die WEL berekend zijn, zoals notarisereloon, administratieve kosten en gelijkaardige vaste posten, en leg uit welk veld ontbreekt voor de registratiebelasting. Zeg nooit alleen "niet berekenbaar" zonder te tonen wat al wel beschikbaar is.
+- Als dit het openingsantwoord is en de laatste gebruikersboodschap aangeeft dat de huidige dossierwaarden automatisch uit screenshots zijn gelezen, benoem dan expliciet welke waarden je hebt gebruikt en vraag de gebruiker ze te bevestigen of te corrigeren.
+- Gebruik daarvoor bij voorkeur deze formulering: "Ik heb de volgende waarden uit je screenshots gelezen: [waarden]. Als iets hier niet klopt, zeg het en ik reken meteen opnieuw."
 - Je mag relevante vervolgtools proactief suggereren, bijvoorbeeld hefboomeffect of erfbelasting, maar niet als een lange lijst.
 
 Structuur voor het openingsbericht:
