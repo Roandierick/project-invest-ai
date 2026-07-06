@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #1b3a5c;
-  --color-primary-strong: #14304b;
-  --color-background: #1a1a1a;
-  --color-surface: #212121;
-  --color-surface-alt: #2f2f2f;
-  --color-border: #3d3d3d;
-  --color-foreground: #ececec;
-  --color-muted: #8e8ea0;
-  --color-success: #5cb88a;
-  --color-warning: #e5ad72;
-  --color-danger: #ef9a9a;
+  --color-background: #0f0f0f;
+  --color-surface: #1a1a1a;
+  --color-surface-alt: #222222;
+  --color-border: #2e2e2e;
+  --color-foreground: #e8e8e8;
+  --color-muted: #7a7a8a;
+  --color-primary: #2563eb;
+  --color-primary-strong: #1d4ed8;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 }
 
 @theme inline {
@@ -29,7 +29,7 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(27, 58, 92, 0.18), transparent 34%),
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.18), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 24%),
     var(--color-background);
   color: var(--color-foreground);
@@ -62,7 +62,7 @@ textarea::placeholder {
 .app-shell-card {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
 }
 
 .subtle-scrollbar {
@@ -108,8 +108,8 @@ textarea::placeholder {
 .issue-field-highlight {
   border-color: var(--color-primary) !important;
   box-shadow:
-    0 0 0 1px rgba(27, 58, 92, 0.9),
-    0 0 0 5px rgba(27, 58, 92, 0.22);
+    0 0 0 1px rgba(37, 99, 235, 0.95),
+    0 0 0 5px rgba(37, 99, 235, 0.24);
   animation: issue-field-highlight-fade 2s ease forwards;
 }
 
@@ -122,13 +122,13 @@ textarea::placeholder {
 @keyframes issue-field-highlight-fade {
   0% {
     box-shadow:
-      0 0 0 1px rgba(27, 58, 92, 0.95),
-      0 0 0 6px rgba(27, 58, 92, 0.28);
+      0 0 0 1px rgba(37, 99, 235, 0.95),
+      0 0 0 6px rgba(37, 99, 235, 0.3);
   }
 
   100% {
     box-shadow:
-      0 0 0 1px rgba(27, 58, 92, 0),
-      0 0 0 0 rgba(27, 58, 92, 0);
+      0 0 0 1px rgba(37, 99, 235, 0),
+      0 0 0 0 rgba(37, 99, 235, 0);
   }
 }

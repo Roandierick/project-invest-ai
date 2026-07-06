@@ -271,19 +271,23 @@ function formatDateTime(value: string): string {
 }
 
 function inputClassName() {
-  return "rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-foreground)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[rgba(27,58,92,0.12)]";
+  return "w-full rounded-[0.95rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[13px] leading-5 text-[var(--color-foreground)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[rgba(37,99,235,0.14)]";
 }
 
 function selectClassName() {
-  return inputClassName();
+  return `${inputClassName()} cursor-pointer`;
 }
 
 function cardClassName() {
-  return "app-shell-card rounded-[1.75rem] p-5 md:p-6";
+  return "app-shell-card rounded-[1.45rem] p-4 md:p-5";
+}
+
+function sectionCardClassName() {
+  return "rounded-[1.15rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4";
 }
 
 function mutedPillClassName() {
-  return "rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-muted)]";
+  return "rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1 text-[11px] text-[var(--color-muted)]";
 }
 
 function fieldId(key: keyof AnalysisFormState) {
@@ -291,15 +295,15 @@ function fieldId(key: keyof AnalysisFormState) {
 }
 
 function warningPanelClassName() {
-  return "rounded-[1rem] border border-[rgba(229,173,114,0.38)] bg-[rgba(180,83,9,0.18)] px-4 py-3 text-sm leading-6 text-[var(--color-warning)]";
+  return "rounded-[0.95rem] border border-[rgba(245,158,11,0.32)] bg-[rgba(245,158,11,0.12)] px-3 py-2.5 text-[13px] leading-5 text-[var(--color-warning)]";
 }
 
 function dangerPanelClassName() {
-  return "rounded-[1rem] border border-[rgba(239,154,154,0.3)] bg-[rgba(153,27,27,0.18)] px-4 py-3 text-sm text-[var(--color-danger)]";
+  return "rounded-[0.95rem] border border-[rgba(239,68,68,0.32)] bg-[rgba(239,68,68,0.12)] px-3 py-2.5 text-[13px] text-[var(--color-danger)]";
 }
 
 function successPanelClassName() {
-  return "rounded-[1rem] border border-[rgba(92,184,138,0.34)] bg-[rgba(45,106,79,0.18)] px-4 py-3 text-sm text-[var(--color-success)]";
+  return "rounded-[0.95rem] border border-[rgba(34,197,94,0.28)] bg-[rgba(34,197,94,0.1)] px-3 py-2.5 text-[13px] text-[var(--color-success)]";
 }
 
 function renderSelectedFileSummary(files: File[]) {
@@ -338,9 +342,11 @@ function renderTextField(
     <label
       key={config.key}
       htmlFor={inputId}
-      className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
+      className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]"
     >
-      <span>{config.label}</span>
+      <span className="text-[11px] font-medium tracking-[0.01em] text-[var(--color-muted)]">
+        {config.label}
+      </span>
       <input
         id={inputId}
         type={config.type ?? "text"}
@@ -1255,352 +1261,360 @@ export function PersistentAnalysisWorkspace({
       }
       onLogout={resolvedCurrentUser ? () => void handleLogout() : undefined}
     >
-      <div className="space-y-6 pb-28">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(360px,0.82fr)] xl:items-start">
         {showWorkspaceFallback && !resolvedCurrentUser ? (
-          <div className={warningPanelClassName()}>
+          <div className={`xl:col-span-2 ${warningPanelClassName()}`}>
             De sessie of chatgeschiedenis kon niet tijdig geladen worden. De
             lege workspace staat alvast open; ververs of log opnieuw in als
             acties niet reageren.
           </div>
         ) : null}
 
-        <section className={cardClassName()}>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                Intake
-              </p>
-              <h2 className="mt-3 font-[family:var(--font-display)] text-3xl text-[var(--color-foreground)]">
-                Pandinvoer en foto-review
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                Geen velden zijn verplicht. Vul in wat je al weet en laat de
-                vision-review de rest aanvullen waar dat helpt.
-              </p>
-            </div>
-            <div className={mutedPillClassName()}>
-              Snapshot v{latestSnapshotVersion || 0}
-            </div>
-          </div>
-
-          {chatBusy || extracting ? (
-            <div className="mt-5">
-              <TypingIndicator
-                label={
-                  extracting
-                    ? "Foto's worden uitgelezen"
-                    : "Analyse wordt herberekend"
-                }
-              />
-            </div>
-          ) : null}
-
-          <div className="mt-6 rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
+        <section className={`${cardClassName()} xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)]`}>
+          <div className="flex h-full flex-col">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
-                  Foto&apos;s van advertentie of pand
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                  De AI leest alleen wat zichtbaar is. Jij kiest daarna welke
-                  waarden effectief in het dossier landen.
+                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                  Intake
+                </p>
+                <h2 className="mt-2 font-[family:var(--font-display)] text-[1.65rem] leading-tight text-[var(--color-foreground)]">
+                  Pandinvoer en foto-review
+                </h2>
+                <p className="mt-2 max-w-2xl text-[13px] leading-5 text-[var(--color-muted)]">
+                  Compact invullen wat je al weet. De rest kan later tijdens de
+                  chat worden aangevuld of herberekend.
                 </p>
               </div>
               <div className={mutedPillClassName()}>
-                {selectedFiles.length} bestand(en)
+                Snapshot v{latestSnapshotVersion || 0}
               </div>
             </div>
 
-            <label className="mt-4 block cursor-pointer rounded-[1.2rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition hover:border-[var(--color-primary)]">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(event) =>
-                  replaceSelectedFiles(Array.from(event.target.files ?? []))
-                }
-                className="sr-only"
-              />
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm font-medium text-[var(--color-foreground)]">
-                    Upload screenshots of foto&apos;s
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">
-                    {renderSelectedFileSummary(selectedFiles)}
-                  </p>
-                </div>
-                <span className="inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-sm text-[var(--color-primary)]">
-                  Bladeren
-                </span>
-              </div>
-            </label>
-
-            {selectedFilePreviews.length > 0 ? (
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                {selectedFilePreviews.map((preview, index) => (
-                  <div
-                    key={preview.url}
-                    className="relative overflow-hidden rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)]"
-                  >
-                    <button
-                      type="button"
-                      aria-label={`Verwijder ${preview.name}`}
-                      onClick={() => removeSelectedFile(index)}
-                      className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-[rgba(0,0,0,0.55)] text-white/88 transition hover:border-[rgba(239,154,154,0.45)] hover:text-[var(--color-danger)]"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      >
-                        <path d="M6 6l12 12" />
-                        <path d="M18 6L6 18" />
-                      </svg>
-                    </button>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- Object URLs from local File previews are not supported through static image optimization. */}
-                    <img
-                      src={preview.url}
-                      alt={preview.name}
-                      className="h-24 w-full object-cover"
-                    />
-                    <p className="truncate px-3 py-2 text-xs text-[var(--color-muted)]">
-                      {preview.name}
-                    </p>
-                  </div>
-                ))}
+            {chatBusy || extracting ? (
+              <div className="mt-4">
+                <TypingIndicator
+                  label={
+                    extracting
+                      ? "Foto's worden uitgelezen"
+                      : "Analyse wordt herberekend"
+                  }
+                />
               </div>
             ) : null}
 
-            <textarea
-              readOnly
-              value=""
-              onPaste={handleTextareaPaste}
-              placeholder="Plak hier je afbeeldingen"
-              className={`${inputClassName()} mt-4 min-h-24 cursor-default resize-none border-dashed bg-[rgba(27,58,92,0.08)] text-sm placeholder:text-[var(--color-muted)]`}
-            />
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleExtractPhotos}
-                disabled={extracting || chatBusy}
-                className="rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-medium text-[var(--color-foreground)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-60"
-              >
-                {extracting ? "Foto's worden uitgelezen..." : "Lees foto's uit"}
-              </button>
-              <p className="text-xs leading-5 text-[var(--color-muted)]">
-                Geen scraping: alleen jouw eigen beelden en screenshots.
-              </p>
-            </div>
-
-            {extractionError ? (
-              <div className={`mt-4 ${dangerPanelClassName()}`}>
-                {extractionError}
-              </div>
-            ) : null}
-
-            {reviewPatch && reviewFields ? (
-              <div className="mt-5 space-y-4">
-                <div className={warningPanelClassName()}>
-                  Controleer de voorgestelde waarden en neem alleen over wat jij
-                  wilt laten meewegen in de analyse.
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {REVIEW_FIELDS.map(({ key, label, mergeField }) => {
-                    const fieldReview = reviewFields[mergeField];
-
-                    return (
-                      <label
-                        key={key}
-                        className="flex flex-col gap-2 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-foreground)]"
-                      >
-                        <span className="font-medium">{label}</span>
-                        <input
-                          className={inputClassName()}
-                          value={(reviewPatch[key] as string | undefined) ?? ""}
-                          onChange={(event) =>
-                            updateReviewPatch(
-                              key,
-                              event.target.value as AnalysisFormState[typeof key],
-                            )
-                          }
-                        />
-                        <p className="text-xs text-[var(--color-muted)]">
-                          Confidence {fieldReview.confidence}
-                          {fieldReview.hasConflict
-                            ? " | conflict tussen afbeeldingen"
-                            : ""}
-                        </p>
-                        {fieldReview.candidates[0]?.evidence ? (
-                          <p className="text-xs leading-5 text-[var(--color-muted)]">
-                            {fieldReview.candidates[0].evidence}
-                          </p>
-                        ) : null}
-                      </label>
-                    );
-                  })}
-                </div>
-
-                {reviewConflicts.length > 0 ? (
-                  <div className="rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 text-sm leading-6 text-[var(--color-foreground)]">
-                    <p className="font-medium">Conflicten tussen afbeeldingen</p>
-                    <div className="mt-3 space-y-2 text-[var(--color-muted)]">
-                      {reviewConflicts.map((conflict) => (
-                        <p key={conflict.field}>
-                          {conflict.field}: {conflict.values.join(" / ")}
-                        </p>
-                      ))}
+            <form className="mt-4 flex min-h-0 flex-1 flex-col" onSubmit={handleIntakeSubmit}>
+              <div className="subtle-scrollbar flex-1 space-y-4 overflow-y-auto pr-1 xl:pr-2">
+                <section className={sectionCardClassName()}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
+                        Foto-upload
+                      </h3>
+                      <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">
+                        Screenshots en foto&apos;s worden samengevoegd tot een voorstel.
+                      </p>
+                    </div>
+                    <div className={mutedPillClassName()}>
+                      {selectedFiles.length} bestand(en)
                     </div>
                   </div>
-                ) : null}
 
-                <button
-                  type="button"
-                  onClick={applyReviewPatch}
-                  className="w-full rounded-[1rem] bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)]"
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1.18fr)_minmax(220px,0.82fr)]">
+                    <label className="block cursor-pointer rounded-[1rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-primary)]">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(event) =>
+                          replaceSelectedFiles(Array.from(event.target.files ?? []))
+                        }
+                        className="sr-only"
+                      />
+                      <div className="flex h-full flex-col justify-between gap-3 md:flex-row md:items-center">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-foreground)]">
+                            Upload screenshots of foto&apos;s
+                          </p>
+                          <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">
+                            {renderSelectedFileSummary(selectedFiles)}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-[13px] font-medium text-[var(--color-primary)]">
+                          Bladeren
+                        </span>
+                      </div>
+                    </label>
+
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        readOnly
+                        value=""
+                        onPaste={handleTextareaPaste}
+                        placeholder="Plak hier je afbeeldingen"
+                        className={`${inputClassName()} min-h-[108px] cursor-default resize-none border-dashed bg-[rgba(37,99,235,0.08)] placeholder:text-[var(--color-muted)]`}
+                      />
+                      <p className="text-[11px] leading-5 text-[var(--color-muted)]">
+                        Ctrl+V blijft ook elders in de workspace werken.
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedFilePreviews.length > 0 ? (
+                    <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
+                      {selectedFilePreviews.map((preview, index) => (
+                        <div
+                          key={preview.url}
+                          className="relative overflow-hidden rounded-[0.95rem] border border-[var(--color-border)] bg-[var(--color-surface)]"
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Verwijder ${preview.name}`}
+                            onClick={() => removeSelectedFile(index)}
+                            className="absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/12 bg-[rgba(0,0,0,0.55)] text-white/88 transition hover:border-[rgba(239,68,68,0.45)] hover:text-[var(--color-danger)]"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                            >
+                              <path d="M6 6l12 12" />
+                              <path d="M18 6L6 18" />
+                            </svg>
+                          </button>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- Object URLs from local File previews are not supported through static image optimization. */}
+                          <img
+                            src={preview.url}
+                            alt={preview.name}
+                            className="h-[4.5rem] w-full object-cover"
+                          />
+                          <p className="truncate px-2.5 py-2 text-[11px] text-[var(--color-muted)]">
+                            {preview.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleExtractPhotos}
+                      disabled={extracting || chatBusy}
+                      className="rounded-[0.95rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-foreground)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-60"
+                    >
+                      {extracting ? "Foto's worden uitgelezen..." : "Lees foto's uit"}
+                    </button>
+                    <p className="text-[11px] leading-5 text-[var(--color-muted)]">
+                      Geen scraping: alleen jouw eigen beelden en screenshots.
+                    </p>
+                  </div>
+
+                  {extractionError ? (
+                    <div className={`mt-4 ${dangerPanelClassName()}`}>
+                      {extractionError}
+                    </div>
+                  ) : null}
+
+                  {reviewPatch && reviewFields ? (
+                    <div className="mt-4 space-y-3">
+                      <div className={warningPanelClassName()}>
+                        Controleer de voorgestelde waarden en neem alleen over wat
+                        jij effectief wilt laten meetellen.
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {REVIEW_FIELDS.map(({ key, label, mergeField }) => {
+                          const fieldReview = reviewFields[mergeField];
+
+                          return (
+                            <label
+                              key={key}
+                              className="flex flex-col gap-1.5 rounded-[0.95rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-[13px] text-[var(--color-foreground)]"
+                            >
+                              <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                                {label}
+                              </span>
+                              <input
+                                className={inputClassName()}
+                                value={(reviewPatch[key] as string | undefined) ?? ""}
+                                onChange={(event) =>
+                                  updateReviewPatch(
+                                    key,
+                                    event.target.value as AnalysisFormState[typeof key],
+                                  )
+                                }
+                              />
+                              <p className="text-[11px] text-[var(--color-muted)]">
+                                Confidence {fieldReview.confidence}
+                                {fieldReview.hasConflict
+                                  ? " | conflict tussen afbeeldingen"
+                                  : ""}
+                              </p>
+                              {fieldReview.candidates[0]?.evidence ? (
+                                <p className="text-[11px] leading-5 text-[var(--color-muted)]">
+                                  {fieldReview.candidates[0].evidence}
+                                </p>
+                              ) : null}
+                            </label>
+                          );
+                        })}
+                      </div>
+
+                      {reviewConflicts.length > 0 ? (
+                        <div className="rounded-[0.95rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 text-[13px] leading-5 text-[var(--color-foreground)]">
+                          <p className="font-medium">Conflicten tussen afbeeldingen</p>
+                          <div className="mt-2 space-y-1.5 text-[var(--color-muted)]">
+                            {reviewConflicts.map((conflict) => (
+                              <p key={conflict.field}>
+                                {conflict.field}: {conflict.values.join(" / ")}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        onClick={applyReviewPatch}
+                        className="w-full rounded-[0.95rem] bg-[var(--color-primary)] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[var(--color-primary-strong)]"
+                      >
+                        Neem deze waarden over in het formulier
+                      </button>
+                    </div>
+                  ) : null}
+                </section>
+
+                <FormSection
+                  title="Pand en marktcontext"
+                  description="Primair: deze velden bepalen meteen wat al berekend kan worden."
                 >
-                  Neem deze waarden over in het formulier
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          <form className="mt-6 space-y-6" onSubmit={handleIntakeSubmit}>
-            <div className="grid gap-5">
-              <FormSection
-                title="Pand en marktcontext"
-                description="Basisgegevens voor aankoopkost, OV en rendement."
-              >
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label
-                    htmlFor={fieldId("gewest")}
-                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
-                  >
-                    <span>Gewest</span>
-                    <select
-                      id={fieldId("gewest")}
-                      className={selectClassName()}
-                      value={form.gewest}
-                      onChange={(event) =>
-                        updateForm(
-                          "gewest",
-                          event.target.value as AnalysisFormState["gewest"],
-                        )
-                      }
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <label
+                      htmlFor={fieldId("gewest")}
+                      className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]"
                     >
-                      <option value="">Kies indien gekend</option>
-                      <option value="vlaanderen">Vlaanderen</option>
-                      <option value="brussel">Brussel</option>
-                      <option value="wallonie">Wallonie</option>
-                    </select>
-                  </label>
+                      <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                        Gewest
+                      </span>
+                      <select
+                        id={fieldId("gewest")}
+                        className={selectClassName()}
+                        value={form.gewest}
+                        onChange={(event) =>
+                          updateForm(
+                            "gewest",
+                            event.target.value as AnalysisFormState["gewest"],
+                          )
+                        }
+                      >
+                        <option value="">Kies indien gekend</option>
+                        <option value="vlaanderen">Vlaanderen</option>
+                        <option value="brussel">Brussel</option>
+                        <option value="wallonie">Wallonie</option>
+                      </select>
+                    </label>
 
-                  <label
-                    htmlFor={fieldId("aankoopSituatie")}
-                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
-                  >
-                    <span>Aankoopsituatie</span>
-                    <select
-                      id={fieldId("aankoopSituatie")}
-                      className={selectClassName()}
-                      value={form.aankoopSituatie}
-                      onChange={(event) =>
-                        updateForm(
-                          "aankoopSituatie",
-                          event.target.value as AnalysisFormState["aankoopSituatie"],
-                        )
-                      }
+                    <label
+                      htmlFor={fieldId("aankoopSituatie")}
+                      className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]"
                     >
-                      <option value="">Kies indien gekend</option>
-                      <option value="investering_of_tweede">
-                        Investering of tweede verblijf
-                      </option>
-                      <option value="enige_eigen_woning">
-                        Enige eigen woning
-                      </option>
-                      <option value="beroepsverkoper">
-                        Aankoop bij beroepsverkoper
-                      </option>
-                      <option value="ingrijpende_energetische_renovatie">
-                        Historische IER-regeling
-                      </option>
-                      <option value="beschermd_monument">
-                        Historische monumentenregeling
-                      </option>
-                    </select>
-                  </label>
+                      <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                        Aankoopsituatie
+                      </span>
+                      <select
+                        id={fieldId("aankoopSituatie")}
+                        className={selectClassName()}
+                        value={form.aankoopSituatie}
+                        onChange={(event) =>
+                          updateForm(
+                            "aankoopSituatie",
+                            event.target.value as AnalysisFormState["aankoopSituatie"],
+                          )
+                        }
+                      >
+                        <option value="">Kies indien gekend</option>
+                        <option value="investering_of_tweede">
+                          Investering of tweede verblijf
+                        </option>
+                        <option value="enige_eigen_woning">
+                          Enige eigen woning
+                        </option>
+                        <option value="beroepsverkoper">
+                          Aankoop bij beroepsverkoper
+                        </option>
+                        <option value="ingrijpende_energetische_renovatie">
+                          Historische IER-regeling
+                        </option>
+                        <option value="beschermd_monument">
+                          Historische monumentenregeling
+                        </option>
+                      </select>
+                    </label>
 
-                  {PROPERTY_FIELDS.map((config) =>
-                    renderTextField(form, updateForm, config),
-                  )}
-                </div>
-              </FormSection>
+                    {PROPERTY_FIELDS.map((config) =>
+                      renderTextField(form, updateForm, config),
+                    )}
+                  </div>
+                </FormSection>
 
-              <FormSection
-                title="Rendement en exploitatie"
-                description="Vuistregels worden alleen gebruikt als jij deze velden leeg laat."
-              >
-                <div className="grid gap-4 md:grid-cols-2">
-                  {YIELD_FIELDS.map((config) =>
-                    renderTextField(form, updateForm, config),
-                  )}
-                </div>
-              </FormSection>
+                <CollapsibleSection
+                  title="Rendement en exploitatie"
+                  description="Vuistregels worden alleen gebruikt als jij deze velden leeg laat."
+                  defaultOpen
+                >
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {YIELD_FIELDS.map((config) =>
+                      renderTextField(form, updateForm, config),
+                    )}
+                  </div>
+                </CollapsibleSection>
 
-              <FormSection
-                title="Financiering"
-                description="Rente blijft altijd gebruikersinput. De marktindicatie hieronder is enkel context."
-              >
-                <div className="grid gap-4 md:grid-cols-2">
-                  {FINANCING_FIELDS.map((config) =>
-                    renderTextField(form, updateForm, config),
-                  )}
+                <CollapsibleSection
+                  title="Financiering"
+                  description="Rente blijft altijd gebruikersinput. De marktindicatie hieronder is enkel context."
+                  defaultOpen
+                >
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {FINANCING_FIELDS.map((config) =>
+                      renderTextField(form, updateForm, config),
+                    )}
 
-                  <label
-                    htmlFor={fieldId("leningType")}
-                    className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
-                  >
-                    <span>Leningtype</span>
-                    <select
-                      id={fieldId("leningType")}
-                      className={selectClassName()}
-                      value={form.leningType}
-                      onChange={(event) =>
-                        updateForm(
-                          "leningType",
-                          event.target.value as AnalysisFormState["leningType"],
-                        )
-                      }
+                    <label
+                      htmlFor={fieldId("leningType")}
+                      className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]"
                     >
-                      <option value="">Kies indien gekend</option>
-                      <option value="vast">Vast</option>
-                      <option value="variabel">Variabel</option>
-                    </select>
-                  </label>
+                      <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                        Leningtype
+                      </span>
+                      <select
+                        id={fieldId("leningType")}
+                        className={selectClassName()}
+                        value={form.leningType}
+                        onChange={(event) =>
+                          updateForm(
+                            "leningType",
+                            event.target.value as AnalysisFormState["leningType"],
+                          )
+                        }
+                      >
+                        <option value="">Kies indien gekend</option>
+                        <option value="vast">Vast</option>
+                        <option value="variabel">Variabel</option>
+                      </select>
+                    </label>
 
-                  <BooleanSelect
-                    label="Alleenstaand?"
-                    value={form.alleenstaand}
-                    onChange={(value) => updateForm("alleenstaand", value)}
-                  />
-                </div>
+                    <BooleanSelect
+                      label="Alleenstaand?"
+                      value={form.alleenstaand}
+                      onChange={(value) => updateForm("alleenstaand", value)}
+                    />
+                  </div>
 
-                <div className="mt-4 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                  <p className="text-sm font-medium text-[var(--color-foreground)]">
-                    Marktindicatie rentevoet
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                    Niet-bindende referentie op basis van{" "}
-                    {ECB_MARKET_REFERENCE.sourceLabel}, laatste observatie{" "}
-                    {ECB_MARKET_REFERENCE.lastObservation}.
-                  </p>
-                  <div className="mt-3 grid gap-3 md:grid-cols-3">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <MetricBadge
                       label="Alle nieuwe woonleningen"
                       value={`${ECB_MARKET_REFERENCE.overall}%`}
@@ -1614,270 +1628,342 @@ export function PersistentAnalysisWorkspace({
                       value={`${ECB_MARKET_REFERENCE.variableShortTerm}%`}
                     />
                   </div>
-                </div>
-              </FormSection>
+                </CollapsibleSection>
 
-              <FormSection
-                title="Fiscale en dossiernuances"
-                description="Alleen invullen als je ze kent. Leeg laten is prima."
-              >
-                <div className="grid gap-4 md:grid-cols-2">
-                  {FISCAL_FIELDS.map((config) =>
-                    renderTextField(form, updateForm, config),
-                  )}
-
-                  <BooleanSelect
-                    label="Kopers zijn uitsluitend natuurlijke personen?"
-                    value={form.kopersZijnUitsluitendNatuurlijkePersonen}
-                    onChange={(value) =>
-                      updateForm("kopersZijnUitsluitendNatuurlijkePersonen", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Verwerving in volle eigendom?"
-                    value={form.verwervingInVolleEigendom}
-                    onChange={(value) =>
-                      updateForm("verwervingInVolleEigendom", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Andere woning in volle eigendom?"
-                    value={form.heeftAndereWoningInVolleEigendom}
-                    onChange={(value) =>
-                      updateForm("heeftAndereWoningInVolleEigendom", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Verkoop andere woning binnen tolerantie?"
-                    value={form.verkooptAndereWoningBinnenTolerantie}
-                    onChange={(value) =>
-                      updateForm("verkooptAndereWoningBinnenTolerantie", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Pand in kernstad of Vlaamse Rand?"
-                    value={form.ligtInKernstadOfVlaamseRand}
-                    onChange={(value) =>
-                      updateForm("ligtInKernstadOfVlaamseRand", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Eigen gezinswoning van de eigenaar?"
-                    value={form.isEigenWoningVanEigenaar}
-                    onChange={(value) =>
-                      updateForm("isEigenWoningVanEigenaar", value)
-                    }
-                  />
-                  <BooleanSelect
-                    label="Kwalificerende handicap?"
-                    value={form.invaliditeit}
-                    onChange={(value) => updateForm("invaliditeit", value)}
-                  />
-                  <BooleanSelect
-                    label="Eigenaar ouder dan 70?"
-                    value={form.eigenaarOuderDan70}
-                    onChange={(value) => updateForm("eigenaarOuderDan70", value)}
-                  />
-                </div>
-              </FormSection>
-            </div>
-
-            <label
-              htmlFor={fieldId("notes")}
-              className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]"
-            >
-              <span>Notities of context</span>
-              <textarea
-                id={fieldId("notes")}
-                className={`${inputClassName()} min-h-28 resize-y`}
-                value={form.notes}
-                onChange={(event) => updateForm("notes", event.target.value)}
-                placeholder="Bijvoorbeeld: opknapper, lift te vernieuwen, verkoper wil snel sluiten..."
-              />
-            </label>
-
-            {error ? (
-              <div className={dangerPanelClassName()}>
-                {error}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={workspaceBusy || chatBusy}
-              className="w-full rounded-[1rem] bg-[var(--color-primary)] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {chatBusy
-                ? "Analyse wordt gestreamd..."
-                : activeConversation?.messages.length
-                  ? "Werk deze chatanalyse bij"
-                  : "Start analysechat"}
-            </button>
-            <p className="text-xs leading-5 text-[var(--color-muted)]">
-              Na het starten springt de pagina automatisch naar de chat hieronder.
-              Aanpassingen doe je gewoon door terug naar boven te scrollen.
-            </p>
-          </form>
-        </section>
-
-        <section ref={chatSectionRef} className={cardClassName()}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                Chat
-              </p>
-              <h2 className="mt-3 font-[family:var(--font-display)] text-3xl text-[var(--color-foreground)]">
-                {activeConversation?.summary.title ?? "Nieuwe analyse"}
-              </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--color-muted)]">
-                Intake bovenaan, gesprek hieronder. Elke berekening komt mee in
-                dezelfde stroom als een assistant-kaart, zodat cijfers en
-                context netjes samen blijven.
-              </p>
-            </div>
-            <div className={mutedPillClassName()}>
-              Status: {chatBusy ? "streaming" : latestResult?.status ?? "nog leeg"}
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {displayedMessages.length === 0 && !latestResult ? (
-              <div className="rounded-[1.5rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-alt)] px-6 py-10 text-center">
-                <p className="text-sm font-medium text-[var(--color-foreground)]">
-                  Vertel me over een pand
-                </p>
-                <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--color-muted)]">
-                  Vul bovenaan enkele kerngegevens in of upload screenshots. De
-                  tool toont meteen wat al berekend kan worden en opent daarna
-                  de analysechat.
-                </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setComposer("Vertel me eerlijk wat je van dit pand vindt.")
-                  }
-                  className="mt-5 rounded-[1rem] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)]"
+                <CollapsibleSection
+                  title="Fiscale details / optioneel"
+                  description="Datums en dossiernuances die je later ook nog kunt invullen."
+                  defaultOpen={false}
                 >
-                  Voorbeeldvraag klaarzetten
-                </button>
-              </div>
-            ) : null}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {FISCAL_FIELDS.map((config) =>
+                      renderTextField(form, updateForm, config),
+                    )}
 
-            {displayedMessages.map((message) => {
-              const isAssistant = message.role === "assistant";
+                    <BooleanSelect
+                      label="Kopers zijn uitsluitend natuurlijke personen?"
+                      value={form.kopersZijnUitsluitendNatuurlijkePersonen}
+                      onChange={(value) =>
+                        updateForm("kopersZijnUitsluitendNatuurlijkePersonen", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Verwerving in volle eigendom?"
+                      value={form.verwervingInVolleEigendom}
+                      onChange={(value) =>
+                        updateForm("verwervingInVolleEigendom", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Andere woning in volle eigendom?"
+                      value={form.heeftAndereWoningInVolleEigendom}
+                      onChange={(value) =>
+                        updateForm("heeftAndereWoningInVolleEigendom", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Verkoop andere woning binnen tolerantie?"
+                      value={form.verkooptAndereWoningBinnenTolerantie}
+                      onChange={(value) =>
+                        updateForm("verkooptAndereWoningBinnenTolerantie", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Pand in kernstad of Vlaamse Rand?"
+                      value={form.ligtInKernstadOfVlaamseRand}
+                      onChange={(value) =>
+                        updateForm("ligtInKernstadOfVlaamseRand", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Eigen gezinswoning van de eigenaar?"
+                      value={form.isEigenWoningVanEigenaar}
+                      onChange={(value) =>
+                        updateForm("isEigenWoningVanEigenaar", value)
+                      }
+                    />
+                    <BooleanSelect
+                      label="Kwalificerende handicap?"
+                      value={form.invaliditeit}
+                      onChange={(value) => updateForm("invaliditeit", value)}
+                    />
+                    <BooleanSelect
+                      label="Eigenaar ouder dan 70?"
+                      value={form.eigenaarOuderDan70}
+                      onChange={(value) => updateForm("eigenaarOuderDan70", value)}
+                    />
+                  </div>
+                </CollapsibleSection>
 
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
+                <FormSection
+                  title="Notities"
+                  description="Korte context die de openingsanalyse meer kleur geeft."
                 >
-                  <article
-                    className={`w-full max-w-[min(100%,58rem)] rounded-[1.45rem] px-5 py-4 ${
-                      isAssistant
-                        ? "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)]"
-                        : "bg-[var(--color-primary)] text-white"
-                    }`}
+                  <label
+                    htmlFor={fieldId("notes")}
+                    className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]"
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <p
-                        className={`text-[0.68rem] font-semibold uppercase tracking-[0.16em] ${
-                          isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
-                        }`}
-                      >
-                        {isAssistant ? "Assistant" : "Gebruiker"}
-                      </p>
-                      <p
-                        className={`text-xs ${
-                          isAssistant ? "text-[var(--color-muted)]" : "text-white/68"
-                        }`}
-                      >
-                        {message.pending
-                          ? "nu bezig..."
-                          : formatDateTime(message.createdAt)}
-                      </p>
-                    </div>
-
-                    <ChatMarkdown
-                      className="mt-3"
-                      content={message.content}
+                    <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                      Notities of context
+                    </span>
+                    <textarea
+                      id={fieldId("notes")}
+                      className={`${inputClassName()} min-h-20 resize-y`}
+                      value={form.notes}
+                      onChange={(event) => updateForm("notes", event.target.value)}
+                      placeholder="Bijvoorbeeld: opknapper, lift te vernieuwen, verkoper wil snel sluiten..."
                     />
-
-                    {message.pending && isAssistant ? (
-                      <div className="mt-3">
-                        <TypingIndicator label="Antwoord stroomt binnen" />
-                      </div>
-                    ) : null}
-                  </article>
-                </div>
-              );
-            })}
-
-            {latestResult ? (
-              <div className="flex justify-start">
-                <article className="w-full max-w-[min(100%,64rem)] rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4 md:p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                      Assistant snapshotanalyse
-                    </p>
-                    <p className="text-xs text-[var(--color-muted)]">
-                      {activeConversation?.latestSnapshot
-                        ? formatDateTime(activeConversation.latestSnapshot.createdAt)
-                        : "Laatste berekening"}
-                    </p>
-                  </div>
-
-                  <div className="mt-4">
-                    <AnalysisResultsCard
-                      result={latestResult}
-                      form={form}
-                      enrichmentContext={currentEnrichmentContext}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <IssueList
-                      issues={latestResult.issues ?? []}
-                      emptyMessage="Geen openstaande issues in deze berekening."
-                    />
-                  </div>
-                </article>
+                  </label>
+                </FormSection>
               </div>
-            ) : null}
 
-            <div ref={chatEndRef} />
-          </div>
+              <div className="mt-4 border-t border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(26,26,26,0),var(--color-surface)_16%)] pt-4">
+                {error ? (
+                  <div className={dangerPanelClassName()}>
+                    {error}
+                  </div>
+                ) : null}
 
-          <div className="sticky bottom-3 z-10 mt-8 -mx-5 px-5 pb-1 pt-3 md:-mx-6 md:px-6">
-            <form
-              className="rounded-[1.45rem] border border-[var(--color-border)] bg-[rgba(33,33,33,0.94)] p-4 shadow-[0_26px_48px_rgba(0,0,0,0.32)] backdrop-blur"
-              onSubmit={handleComposerSubmit}
-            >
-              <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
-                <span>Vervolgvraag of wijziging</span>
-                <textarea
-                  className={`${inputClassName()} min-h-28 resize-y`}
-                  value={composer}
-                  onChange={(event) => setComposer(event.target.value)}
-                  placeholder="Bijvoorbeeld: herbereken met 1.150 euro huur en zeg me eerlijk of dit nog steek houdt."
-                />
-              </label>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs leading-5 text-[var(--color-muted)]">
-                  Maximaal een concrete vraag per beurt werkt hier het best.
-                </p>
                 <button
                   type="submit"
-                  disabled={workspaceBusy || chatBusy || !composer.trim()}
-                  className="rounded-[1rem] bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:opacity-60"
+                  disabled={workspaceBusy || chatBusy}
+                  className="mt-3 w-full rounded-[1rem] bg-[var(--color-primary)] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {chatBusy ? "Stream bezig..." : "Verstuur in chat"}
+                  {chatBusy
+                    ? "Analyse wordt gestreamd..."
+                    : activeConversation?.messages.length
+                      ? "Werk deze chatanalyse bij"
+                      : "Start analysechat"}
                 </button>
+                <p className="mt-3 text-[11px] leading-5 text-[var(--color-muted)]">
+                  Na het starten springt de pagina automatisch naar de chat.
+                  Aanpassingen doe je door terug naar boven te scrollen.
+                </p>
               </div>
             </form>
           </div>
         </section>
+
+        <section
+          ref={chatSectionRef}
+          className={`${cardClassName()} xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)]`}
+        >
+          <div className="flex h-full flex-col">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                  Chat
+                </p>
+                <h2 className="mt-2 font-[family:var(--font-display)] text-[1.45rem] leading-tight text-[var(--color-foreground)]">
+                  {activeConversation?.summary.title ?? "Nieuwe analyse"}
+                </h2>
+                <p className="mt-2 text-[13px] leading-5 text-[var(--color-muted)]">
+                  Eerlijk oordeel, herberekeningen en vervolgvragen in dezelfde
+                  stroom.
+                </p>
+              </div>
+              <div className={mutedPillClassName()}>
+                {chatBusy ? "streaming" : latestResult?.status ?? "nog leeg"}
+              </div>
+            </div>
+
+            <div className="mt-4 flex min-h-0 flex-1 flex-col">
+              <div className="subtle-scrollbar flex-1 space-y-3 overflow-y-auto pr-1">
+                {displayedMessages.length === 0 && !latestResult ? (
+                  <div className="rounded-[1.2rem] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-5">
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">
+                      Vertel me over een pand
+                    </p>
+                    <p className="mt-2 text-[13px] leading-6 text-[var(--color-muted)]">
+                      Start links je intake. Zodra de eerste analyse binnen is,
+                      groeit dit paneel mee met het gesprek.
+                    </p>
+                  </div>
+                ) : null}
+
+                {displayedMessages.map((message) => {
+                  const isAssistant = message.role === "assistant";
+
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
+                    >
+                      <article
+                        className={`w-full ${
+                          isAssistant ? "max-w-full" : "max-w-[88%]"
+                        } rounded-[1.2rem] px-4 py-3 ${
+                          isAssistant
+                            ? "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)]"
+                            : "bg-[var(--color-primary)] text-white"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p
+                            className={`text-[0.66rem] font-semibold uppercase tracking-[0.16em] ${
+                              isAssistant
+                                ? "text-[var(--color-muted)]"
+                                : "text-white/68"
+                            }`}
+                          >
+                            {isAssistant ? "Assistant" : "Gebruiker"}
+                          </p>
+                          <p
+                            className={`text-[11px] ${
+                              isAssistant
+                                ? "text-[var(--color-muted)]"
+                                : "text-white/68"
+                            }`}
+                          >
+                            {message.pending
+                              ? "nu bezig..."
+                              : formatDateTime(message.createdAt)}
+                          </p>
+                        </div>
+
+                        <ChatMarkdown className="mt-2.5" content={message.content} />
+
+                        {message.pending && isAssistant ? (
+                          <div className="mt-3">
+                            <TypingIndicator label="Antwoord stroomt binnen" />
+                          </div>
+                        ) : null}
+                      </article>
+                    </div>
+                  );
+                })}
+
+                {latestResult ? (
+                  <article className="rounded-[1.2rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                        Assistant snapshotanalyse
+                      </p>
+                      <p className="text-[11px] text-[var(--color-muted)]">
+                        {activeConversation?.latestSnapshot
+                          ? formatDateTime(activeConversation.latestSnapshot.createdAt)
+                          : "Laatste berekening"}
+                      </p>
+                    </div>
+
+                    <div className="mt-3">
+                      <AnalysisResultsCard
+                        result={latestResult}
+                        form={form}
+                        enrichmentContext={currentEnrichmentContext}
+                      />
+                    </div>
+
+                    <div className="mt-3">
+                      <IssueList
+                        issues={latestResult.issues ?? []}
+                        emptyMessage="Geen openstaande issues in deze berekening."
+                      />
+                    </div>
+                  </article>
+                ) : null}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                <form
+                  className="rounded-[1.15rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3"
+                  onSubmit={handleComposerSubmit}
+                >
+                  <label className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]">
+                    <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                      Vervolgvraag of wijziging
+                    </span>
+                    <textarea
+                      className={`${inputClassName()} min-h-20 resize-y`}
+                      value={composer}
+                      onChange={(event) => setComposer(event.target.value)}
+                      placeholder="Bijvoorbeeld: herbereken met 1.150 euro huur."
+                    />
+                  </label>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-[11px] leading-5 text-[var(--color-muted)]">
+                      Hou het best bij één concrete vraag per beurt.
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={workspaceBusy || chatBusy || !composer.trim()}
+                      className="rounded-[0.95rem] bg-[var(--color-primary)] px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[var(--color-primary-strong)] disabled:opacity-60"
+                    >
+                      {chatBusy ? "Stream bezig..." : "Verstuur"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </WorkspaceFrame>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  description,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className={sectionCardClassName()}>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-start justify-between gap-4 text-left"
+        aria-expanded={open}
+      >
+        <div>
+          <h3 className="text-[13px] font-semibold text-[var(--color-foreground)]">
+            {title}
+          </h3>
+          <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">
+            {description}
+          </p>
+        </div>
+        <span
+          className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] transition duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+
+      <div
+        className="overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out"
+        style={{
+          marginTop: open ? "1rem" : "0",
+          maxHeight: open ? "1200px" : "0px",
+          opacity: open ? 1 : 0,
+        }}
+      >
+        <div>{children}</div>
+      </div>
+    </section>
   );
 }
 
@@ -1891,11 +1977,11 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
-      <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
+    <section className={sectionCardClassName()}>
+      <h3 className="text-[13px] font-semibold text-[var(--color-foreground)]">
         {title}
       </h3>
-      <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+      <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">
         {description}
       </p>
       <div className="mt-4">{children}</div>
@@ -1911,11 +1997,11 @@ function MetricBadge({
   value: string;
 }) {
   return (
-    <div className="rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+    <div className="min-w-[8.5rem] rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5">
+      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
         {label}
       </p>
-      <p className="mt-2 text-lg font-semibold text-[var(--color-foreground)]">
+      <p className="mt-1 text-[15px] font-semibold text-[var(--color-foreground)]">
         {value}
       </p>
     </div>
@@ -1932,8 +2018,10 @@ function BooleanSelect({
   onChange: (value: BooleanChoice) => void;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-sm text-[var(--color-foreground)]">
-      <span>{label}</span>
+    <label className="flex flex-col gap-1.5 text-[13px] text-[var(--color-foreground)]">
+      <span className="text-[11px] font-medium tracking-[0.01em] text-[var(--color-muted)]">
+        {label}
+      </span>
       <select
         className={selectClassName()}
         value={value}
